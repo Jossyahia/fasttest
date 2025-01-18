@@ -1,7 +1,9 @@
+// components/dashboard/DashboardStats.tsx
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import Link from "next/link";
 import { Package, ShoppingCart, Users, DollarSign } from "lucide-react";
 
 interface StatsCardProps {
