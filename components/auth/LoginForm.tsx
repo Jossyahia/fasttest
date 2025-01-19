@@ -3,12 +3,15 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const showRegisteredMessage = searchParams.get("registered") === "true";
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,6 +45,14 @@ export default function LoginForm() {
 
   return (
     <div className="w-full max-w-md mx-auto space-y-8">
+      {showRegisteredMessage && (
+        <Alert className="bg-green-50 border-green-200">
+          <AlertDescription className="text-green-800">
+            Account created successfully! Please sign in.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="text-center">
         <h1 className="text-2xl font-bold">Sign In</h1>
         <p className="text-gray-600">to continue to your account</p>
@@ -80,7 +91,11 @@ export default function LoginForm() {
           />
         </div>
 
-        {error && <div className="text-red-500 text-sm">{error}</div>}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <button
           type="submit"

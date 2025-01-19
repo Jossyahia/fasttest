@@ -7,27 +7,49 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 
+// These should match your Prisma enums
+export enum OrderStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  SHIPPED = "SHIPPED",
+  DELIVERED = "DELIVERED",
+  CANCELLED = "CANCELLED",
+}
+
+export enum PaymentStatus {
+  PENDING = "PENDING",
+  PAID = "PAID",
+  FAILED = "FAILED",
+}
+
 const orderSchema = z.object({
-  status: z.enum([
-    "PENDING",
-    "PROCESSING",
-    "SHIPPED",
-    "DELIVERED",
-    "CANCELLED",
-  ]),
-  paymentStatus: z.enum(["PENDING", "PAID", "FAILED"]),
-  shippingAddress: z.string().min(1, "Shipping address is required"),
-  notes: z.string().optional(),
+  status: z.nativeEnum(OrderStatus),
+  paymentStatus: z.nativeEnum(PaymentStatus),
 });
 
 type OrderFormData = z.infer<typeof orderSchema>;
 
+interface OrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  product: {
+    id: string;
+    name: string;
+  };
+}
+
 interface Order {
   id: string;
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
-  paymentStatus: "PENDING" | "PAID" | "FAILED";
-  shippingAddress: string;
-  notes?: string;
+  orderNumber: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  total: number;
+  items: OrderItem[];
+  customer: {
+    id: string;
+    name: string;
+  };
 }
 
 interface EditOrderModalProps {
@@ -54,8 +76,6 @@ export default function EditOrderModal({
     defaultValues: {
       status: order.status,
       paymentStatus: order.paymentStatus,
-      shippingAddress: order.shippingAddress,
-      notes: order.notes,
     },
   });
 
@@ -69,7 +89,10 @@ export default function EditOrderModal({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          status: data.status,
+          paymentStatus: data.paymentStatus,
+        }),
       });
 
       const responseData = await response.json();
@@ -78,10 +101,15 @@ export default function EditOrderModal({
         throw new Error(responseData.error || "Failed to update order");
       }
 
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Update error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while updating the order"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -90,17 +118,18 @@ export default function EditOrderModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            Edit Order #{order.id.slice(-6)}
+            Edit Order #{order.orderNumber}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Close"
           >
-            ×
+            <span className="text-2xl">&times;</span>
           </button>
         </div>
 
@@ -110,20 +139,32 @@ export default function EditOrderModal({
           </div>
         )}
 
+        <div className="mb-4">
+          <div className="text-sm text-gray-600">
+            <p>Customer: {order.customer.name}</p>
+            <p>Total: ${order.total.toFixed(2)}</p>
+            <p>Items: {order.items.length}</p>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-gray-700"
+            >
               Order Status
             </label>
             <select
+              id="status"
               {...register("status")}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-white"
             >
-              <option value="PENDING">Pending</option>
-              <option value="PROCESSING">Processing</option>
-              <option value="SHIPPED">Shipped</option>
-              <option value="DELIVERED">Delivered</option>
-              <option value="CANCELLED">Cancelled</option>
+              {Object.values(OrderStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status.charAt(0) + status.slice(1).toLowerCase()}
+                </option>
+              ))}
             </select>
             {errors.status && (
               <p className="text-red-500 text-sm mt-1">
@@ -133,49 +174,28 @@ export default function EditOrderModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="paymentStatus"
+              className="block text-sm font-medium text-gray-700"
+            >
               Payment Status
             </label>
             <select
+              id="paymentStatus"
               {...register("paymentStatus")}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-white"
             >
-              <option value="PENDING">Pending</option>
-              <option value="PAID">Paid</option>
-              <option value="FAILED">Failed</option>
+              {Object.values(PaymentStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status.charAt(0) + status.slice(1).toLowerCase()}
+                </option>
+              ))}
             </select>
             {errors.paymentStatus && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.paymentStatus.message}
               </p>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Shipping Address
-            </label>
-            <textarea
-              {...register("shippingAddress")}
-              rows={3}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-            />
-            {errors.shippingAddress && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.shippingAddress.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              {...register("notes")}
-              rows={2}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-            />
           </div>
 
           <div className="flex justify-end space-x-3 mt-6">

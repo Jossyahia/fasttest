@@ -1,31 +1,42 @@
+// app/api/orders/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
+// These should match your Prisma enums
+export enum OrderStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  SHIPPED = "SHIPPED",
+  DELIVERED = "DELIVERED",
+  CANCELLED = "CANCELLED",
+}
 
-// Validation schema for order updates
+export enum PaymentStatus {
+  PENDING = "PENDING",
+  PAID = "PAID",
+  FAILED = "FAILED",
+}
+
 const orderUpdateSchema = z.object({
-  status: z.enum([
-    "PENDING",
-    "PROCESSING",
-    "SHIPPED",
-    "DELIVERED",
-    "CANCELLED",
-  ]),
-  paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]),
-  shippingAddress: z.string(),
-  notes: z.string().optional(),
+  status: z.nativeEnum(OrderStatus),
+  paymentStatus: z.nativeEnum(PaymentStatus),
 });
 
-export async function GET(request: NextRequest, { params }: RouteContext) {
-  try {
-    const { id } = await params;
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  if (!params.id) {
+    return NextResponse.json(
+      { error: "Order ID is required" },
+      { status: 400 }
+    );
+  }
 
+  try {
     const order = await prisma.order.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         customer: true,
         items: {
@@ -50,40 +61,82 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteContext) {
-  try {
-    const { id } = await params;
-    const data = await request.json();
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  if (!params.id) {
+    return NextResponse.json(
+      { error: "Order ID is required" },
+      { status: 400 }
+    );
+  }
 
-    // Validate the input data
-    const validationResult = orderUpdateSchema.safeParse(data);
+  try {
+    const body = await request.json();
+
+    const validationResult = orderUpdateSchema.safeParse(body);
+
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Invalid input data", issues: validationResult.error.issues },
+        {
+          error: "Invalid input data",
+          details: validationResult.error.format(),
+        },
         { status: 400 }
       );
     }
 
-    const order = await prisma.order.update({
-      where: { id },
+    const { status, paymentStatus } = validationResult.data;
+
+    const updatedOrder = await prisma.order.update({
+      where: {
+        id: params.id,
+      },
       data: {
-        status: data.status,
-        paymentStatus: data.paymentStatus,
-        shippingAddress: data.shippingAddress,
-        notes: data.notes,
+        status,
+        paymentStatus,
       },
       include: {
-        items: true,
-        customer: true,
+        customer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    return NextResponse.json(order);
+    return NextResponse.json(updatedOrder);
   } catch (error) {
     console.error("Failed to update order:", error);
-    // Fixed the syntax error in the error response
+
+    if (error instanceof Error) {
+      if (error.message.includes("Record to update not found")) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to update order",
+          details: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to update order" },
+      { error: "An unexpected error occurred" },
       { status: 500 }
     );
   }
