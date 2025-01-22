@@ -1,10 +1,9 @@
-// components/orders/AddOrderModal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
 
@@ -17,6 +16,9 @@ const orderItemSchema = z.object({
 const orderSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
+  paymentType: z.enum(["PREPAID", "PAY_ON_DELIVERY", "CREDIT"], {
+    required_error: "Payment type is required",
+  }),
   status: z.enum([
     "PENDING",
     "PROCESSING",
@@ -91,6 +93,7 @@ export default function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     defaultValues: {
       status: "PENDING",
       paymentStatus: "PENDING",
+      paymentType: "PREPAID",
       items: [{ productId: "", quantity: 1, price: 0 }],
     },
   });
@@ -191,6 +194,26 @@ export default function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
             {errors.customerId && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.customerId.message}
+              </p>
+            )}
+          </div>
+
+          {/* Payment Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Payment Type
+            </label>
+            <select
+              {...register("paymentType")}
+              className="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2"
+            >
+              <option value="PREPAID">Prepaid</option>
+              <option value="PAY_ON_DELIVERY">Pay on Delivery</option>
+              <option value="CREDIT">Credit</option>
+            </select>
+            {errors.paymentType && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.paymentType.message}
               </p>
             )}
           </div>

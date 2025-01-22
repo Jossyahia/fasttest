@@ -33,6 +33,10 @@ const navigationItems = [
     href: "/settings",
     icon: Settings,
   },
+  { title: "Products", href: "/products", icon: Settings },
+  { title: "Orders", href: "/orders", icon: Users },
+  { title: "Customers", href: "/customers", icon: Users },
+  { title: "Warehouses", href: "/warehouses", icon: PackageSearch },
 ];
 
 export function Sidebar() {

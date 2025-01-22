@@ -1,4 +1,4 @@
-// app/api/auth/error/page.tsx
+// app/auth/error/page.tsx
 import { Card } from "@/components/ui/card";
 
 interface ErrorPageProps {

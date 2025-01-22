@@ -1,10 +1,21 @@
-// components/auth/LoginForm.tsx
 "use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+// Login form schema
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  organizationId: z.string().optional(),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
   const router = useRouter();
@@ -12,32 +23,40 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const showRegisteredMessage = searchParams.get("registered") === "true";
+  const organizationId = searchParams.get("organizationId");
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      organizationId: organizationId || undefined,
+    },
+  });
+
+  async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
     try {
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: data.email,
+        password: data.password,
+        organizationId: data.organizationId,
         redirect: false,
       });
 
       if (result?.error) {
-        setError("Invalid credentials");
+        setError("Invalid credentials or organization access denied");
         return;
       }
 
       router.push("/dashboard");
       router.refresh();
     } catch (error) {
-      setError("An error occurred");
+      setError("An error occurred during sign in");
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +77,7 @@ export default function LoginForm() {
         <p className="text-gray-600">to continue to your account</p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label
             htmlFor="email"
@@ -67,12 +86,13 @@ export default function LoginForm() {
             Email
           </label>
           <input
-            id="email"
-            name="email"
+            {...register("email")}
             type="email"
-            required
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
           />
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+          )}
         </div>
 
         <div>
@@ -83,13 +103,19 @@ export default function LoginForm() {
             Password
           </label>
           <input
-            id="password"
-            name="password"
+            {...register("password")}
             type="password"
-            required
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
           />
+          {errors.password && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.password.message}
+            </p>
+          )}
         </div>
+
+        {/* Hidden organization field */}
+        <input type="hidden" {...register("organizationId")} />
 
         {error && (
           <Alert variant="destructive">
@@ -118,7 +144,15 @@ export default function LoginForm() {
 
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (organizationId) {
+              params.append("organizationId", organizationId);
+            }
+            signIn("google", {
+              callbackUrl: `/dashboard?${params.toString()}`,
+            });
+          }}
           className="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <div className="flex items-center justify-center">

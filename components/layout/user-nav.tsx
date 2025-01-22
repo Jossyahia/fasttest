@@ -25,9 +25,12 @@ export function UserNav({ user }: UserNavProps) {
 
   if (!user) {
     return (
+       <Link href="/login" passHref>
       <Button variant="ghost" className="text-sm" onClick={() => signIn()}>
         Sign In
       </Button>
+          </Link>
+
     );
   }
 

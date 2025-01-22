@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { CustomerType, UserRole, Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
         });
 
         // 3. Create customer
-        await tx.customer.create({
+        const customer = await tx.customer.create({
           data: {
             name,
             email,
@@ -97,18 +98,18 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // 4. Create settings
+        // 4. Create settings with explicit currency
         await tx.settings.create({
           data: {
             organizationId: organization.id,
             lowStockThreshold: 10,
-            currency: "USD",
+            currency: "NGN",
             notificationEmail: email,
           },
         });
 
         // 5. Create default warehouse
-        await tx.warehouse.create({
+        const warehouse = await tx.warehouse.create({
           data: {
             name: "Main Warehouse",
             location: "Default Location",
@@ -116,23 +117,45 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // 6. Create initial activity log
+        // 6. Create a default product for the organization
+        await tx.product.create({
+          data: {
+            sku: `SKU-${randomUUID().slice(0, 8)}`,
+            name: "Sample Product",
+            description: "Default product created with account",
+            quantity: 0,
+            minStock: 10,
+            status: "ACTIVE",
+            organizationId: organization.id,
+            warehouseId: warehouse.id,
+          },
+        });
+
+        // 7. Create initial activity log
         await tx.activity.create({
           data: {
             action: "ACCOUNT_CREATED",
-            details: "User account and organization created",
+            details: JSON.stringify({
+              event: "New account registration",
+              organization: organizationName,
+              customerType,
+            }),
             userId: user.id,
           },
         });
 
-        return { user, organization };
+        return { user, organization, customer };
       });
 
       return new Response(
         JSON.stringify({
           success: true,
           message: "Account created successfully",
-          organizationId: result.organization.id,
+          data: {
+            organizationId: result.organization.id,
+            userId: result.user.id,
+            customerId: result.customer.id,
+          },
         }),
         {
           status: 201,
@@ -145,7 +168,12 @@ export async function POST(request: NextRequest) {
       let errorMessage = "Failed to create account. Please try again.";
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        errorMessage = `Database error: ${error.message}`;
+        if (error.code === "P2002") {
+          errorMessage =
+            "A unique constraint would be violated. Please check your input.";
+        } else {
+          errorMessage = `Database error: ${error.message}`;
+        }
       }
 
       return new Response(JSON.stringify({ error: errorMessage }), {

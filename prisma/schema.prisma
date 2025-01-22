@@ -198,6 +198,8 @@ model Order {
   paymentStatus PaymentStatus @default(PENDING)
   paymentType   PaymentType   @default(PREPAID)
   total         Float
+  shippingAddress String?     // Added this field
+  notes         String?       // Added this field
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -262,7 +264,7 @@ model Activity {
 model Settings {
   id                String        @id @default(cuid())
   lowStockThreshold Int           @default(10)
-  currency          String        @default("USD")
+  currency          String        @default("NGN")
   notificationEmail String?
   metadata          Json?
   createdAt         DateTime      @default(now())

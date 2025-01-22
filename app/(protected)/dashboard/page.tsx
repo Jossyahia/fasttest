@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { auth } from "@/auth";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import LowStockAlert from "@/components/dashboard/LowStockAlert";
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
+    const session = await auth();
   return (
     <div className="space-y-6">
       <DashboardStats />

@@ -8,7 +8,7 @@ import { UserRole } from "@prisma/client";
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
-  debug: process.env.NODE_ENV === "development", // Enable debug logs in development
+  debug: process.env.NODE_ENV === "development",
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -45,6 +45,9 @@ export const authConfig = {
           where: {
             email: credentials.email,
           },
+          include: {
+            organization: true,
+          },
         });
 
         if (!user || !user.password) {
@@ -74,16 +77,24 @@ export const authConfig = {
     async signIn({ user, account, profile }) {
       try {
         if (account?.provider === "google") {
-          // First check if user exists
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
+            include: {
+              organization: true,
+            },
           });
 
           if (!existingUser) {
-            // Create organization first
+            // Create organization with default settings
             const organization = await prisma.organization.create({
               data: {
                 name: `${user.name}'s Organization`,
+                settings: {
+                  create: {
+                    lowStockThreshold: 10,
+                    currency: "NGN",
+                  },
+                },
               },
             });
 
@@ -94,6 +105,13 @@ export const authConfig = {
                 name: user.name!,
                 role: "CUSTOMER" as UserRole,
                 organizationId: organization.id,
+                // Track this signup in activities
+                activities: {
+                  create: {
+                    action: "SIGNUP",
+                    details: "User signed up via Google",
+                  },
+                },
               },
             });
           }
@@ -109,11 +127,19 @@ export const authConfig = {
       if (user) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
+          include: {
+            organization: {
+              include: {
+                settings: true,
+              },
+            },
+          },
         });
 
         if (dbUser) {
           token.role = dbUser.role;
           token.organizationId = dbUser.organizationId;
+          token.settings = dbUser.organization.settings;
         }
       }
 
@@ -129,13 +155,14 @@ export const authConfig = {
         session.user.id = token.sub!;
         session.user.role = token.role as UserRole;
         session.user.organizationId = token.organizationId as string;
+        session.user.settings = token.settings;
       }
       return session;
     },
   },
   pages: {
     signIn: "/login",
-    error: "/auth/error", // Add custom error page
+    error: "/auth/error",
   },
   session: {
     strategy: "jwt",
@@ -155,6 +182,12 @@ declare module "next-auth" {
       image?: string | null;
       role: UserRole;
       organizationId: string;
+      settings?: {
+        lowStockThreshold: number;
+        currency: string;
+        notificationEmail?: string | null;
+        metadata?: any;
+      } | null;
     };
   }
   interface User {
@@ -167,5 +200,11 @@ declare module "next-auth/jwt" {
   interface JWT {
     role: UserRole;
     organizationId: string;
+    settings?: {
+      lowStockThreshold: number;
+      currency: string;
+      notificationEmail?: string | null;
+      metadata?: any;
+    } | null;
   }
 }

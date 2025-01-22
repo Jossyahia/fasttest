@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { createProductSchema } from "@/lib/validations/product";
 import { z } from "zod";
-
+import { auth } from "@/auth";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;

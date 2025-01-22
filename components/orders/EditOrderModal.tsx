@@ -4,10 +4,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 
-// These should match your Prisma enums
 export enum OrderStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",
@@ -19,7 +18,15 @@ export enum OrderStatus {
 export enum PaymentStatus {
   PENDING = "PENDING",
   PAID = "PAID",
+  PARTIALLY_PAID = "PARTIALLY_PAID",
+  REFUNDED = "REFUNDED",
   FAILED = "FAILED",
+}
+
+export enum PaymentType {
+  PREPAID = "PREPAID",
+  PAY_ON_DELIVERY = "PAY_ON_DELIVERY",
+  CREDIT = "CREDIT",
 }
 
 const orderSchema = z.object({
@@ -44,12 +51,15 @@ interface Order {
   orderNumber: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentType: PaymentType;
   total: number;
   items: OrderItem[];
   customer: {
     id: string;
     name: string;
   };
+  shippingAddress?: string;
+  notes?: string;
 }
 
 interface EditOrderModalProps {
@@ -79,27 +89,50 @@ export default function EditOrderModal({
     },
   });
 
+  // components/orders/EditOrderModal.tsx
+
+  // components/orders/EditOrderModal.tsx
   const onSubmit = async (data: OrderFormData) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
+      const requestBody = {
+        customerId: order.customer.id,
+        paymentType: order.paymentType,
+        items: order.items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        shippingAddress: order.shippingAddress || "",
+        notes: order.notes || "",
+        status: data.status,
+        paymentStatus: data.paymentStatus,
+      };
+
+      // Debug log
+      console.log(
+        "Sending request body:",
+        JSON.stringify(requestBody, null, 2)
+      );
+
       const response = await fetch(`/api/orders/${order.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          status: data.status,
-          paymentStatus: data.paymentStatus,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      const responseData = await response.json();
-
       if (!response.ok) {
-        throw new Error(responseData.error || "Failed to update order");
+        const errorData = await response.json();
+        console.error("Response error:", errorData);
+        throw new Error(errorData.error || "Failed to update order");
       }
+
+      const responseData = await response.json();
+      console.log("Response data:", responseData);
 
       await queryClient.invalidateQueries({ queryKey: ["orders"] });
       onClose();
@@ -144,6 +177,7 @@ export default function EditOrderModal({
             <p>Customer: {order.customer.name}</p>
             <p>Total: ${order.total.toFixed(2)}</p>
             <p>Items: {order.items.length}</p>
+            <p>Payment Type: {order.paymentType.replace(/_/g, " ")}</p>
           </div>
         </div>
 
@@ -187,7 +221,8 @@ export default function EditOrderModal({
             >
               {Object.values(PaymentStatus).map((status) => (
                 <option key={status} value={status}>
-                  {status.charAt(0) + status.slice(1).toLowerCase()}
+                  {status.charAt(0) +
+                    status.slice(1).toLowerCase().replace(/_/g, " ")}
                 </option>
               ))}
             </select>

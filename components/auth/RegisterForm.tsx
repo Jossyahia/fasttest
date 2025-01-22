@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CustomerType, UserRole } from "@prisma/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import {
   Card,
   CardContent,
@@ -18,52 +21,72 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
-interface RegisterFormData {
-  name: string;
-  email: string;
-  password: string;
-  organizationName: string;
-  customerType: CustomerType;
-  phone?: string;
-  address?: string;
-}
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  organizationName: z.string().min(2, "Organization name is required"),
+  customerType: z.enum([
+    CustomerType.RETAIL,
+    CustomerType.WHOLESALE,
+    CustomerType.THIRDPARTY,
+  ]),
+  phone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
+const defaultValues: RegisterFormValues = {
+  name: "",
+  email: "",
+  password: "",
+  organizationName: "",
+  customerType: CustomerType.RETAIL,
+  phone: "",
+  address: "",
+};
 
 export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues,
+    mode: "onBlur",
+  });
+
+  async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
     setError(null);
-
-    const formData = new FormData(event.currentTarget);
-    const data: RegisterFormData = {
-      name: formData.get("name") as string,
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
-      organizationName: formData.get("organizationName") as string,
-      customerType: formData.get("customerType") as CustomerType,
-      phone: formData.get("phone") as string,
-      address: formData.get("address") as string,
-    };
 
     try {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          role: UserRole.CUSTOMER,
+        }),
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Error registering user");
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error registering user");
       }
 
       router.push("/login?registered=true");
@@ -87,122 +110,170 @@ export default function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
                 name="name"
-                type="text"
-                required
-                placeholder="John Doe"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="John Doe" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
+              <FormField
+                control={form.control}
                 name="email"
-                type="email"
-                required
-                placeholder="john@example.com"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="john@example.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
+              <FormField
+                control={form.control}
                 name="password"
-                type="password"
-                required
-                minLength={6}
-                placeholder="Create a secure password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        placeholder="Create a secure password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
 
-          {/* Organization Information */}
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="organizationName">Organization Name</Label>
-              <Input
-                id="organizationName"
+            {/* Organization Information */}
+            <div className="space-y-4 pt-4">
+              <FormField
+                control={form.control}
                 name="organizationName"
-                type="text"
-                required
-                placeholder="Your Company Name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Your Company Name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="customerType">Customer Type</Label>
-              <Select
+              <FormField
+                control={form.control}
                 name="customerType"
-                defaultValue={CustomerType.RETAIL}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select customer type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={CustomerType.RETAIL}>Retail</SelectItem>
-                  <SelectItem value={CustomerType.WHOLESALE}>
-                    Wholesale
-                  </SelectItem>
-                  <SelectItem value={CustomerType.THIRDPARTY}>
-                    Third Party
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select customer type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={CustomerType.RETAIL}>
+                          Retail
+                        </SelectItem>
+                        <SelectItem value={CustomerType.WHOLESALE}>
+                          Wholesale
+                        </SelectItem>
+                        <SelectItem value={CustomerType.THIRDPARTY}>
+                          Third Party
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number (Optional)</Label>
-              <Input
-                id="phone"
+              <FormField
+                control={form.control}
                 name="phone"
-                type="tel"
-                placeholder="+1 (555) 000-0000"
+                render={({ field: { value, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...fieldProps}
+                        value={value || ""}
+                        type="tel"
+                        placeholder="+1 (555) 000-0000"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Business Address (Optional)</Label>
-              <Input
-                id="address"
+              <FormField
+                control={form.control}
                 name="address"
-                type="text"
-                placeholder="123 Business St, City, Country"
+                render={({ field: { value, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>Business Address (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...fieldProps}
+                        value={value || ""}
+                        placeholder="123 Business St, City, Country"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create account"}
-          </Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Creating account..." : "Create account"}
+            </Button>
 
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-primary hover:underline font-medium"
-              >
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </form>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
