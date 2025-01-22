@@ -46,5 +46,7 @@ export const config = {
     "/admin/:path*",
     "/settings/:path*",
     "/profile/:path*",
+    "/warehouses/:path*",
+    "/api/warehouses/:path*",
   ],
 };

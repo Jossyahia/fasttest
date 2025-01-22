@@ -172,3 +172,12 @@ export interface MovementsReport {
     quantity: number | null;
   };
 }
+
+export interface User extends PrismaUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: UserRole;
+  emailVerified: Date | null;
+  organizationId: string | null;
+}
