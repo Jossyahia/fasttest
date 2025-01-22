@@ -12,7 +12,12 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-    const session = await auth();
+  const session = await auth();
+
+  if (!session) {
+    redirect("/auth/login");
+  }
+
   return (
     <div className="space-y-6">
       <DashboardStats />

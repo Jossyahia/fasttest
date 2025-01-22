@@ -1,4 +1,3 @@
-// auth.config.ts
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
@@ -9,18 +8,26 @@ import { UserRole } from "@prisma/client";
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
-  debug: true, // Enable debug mode to see more detailed logs
+  debug: process.env.NODE_ENV === "development",
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true, // Add this line
       authorization: {
         params: {
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
         },
+      },
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          role: "CUSTOMER" as UserRole,
+        };
       },
     }),
     Credentials({
@@ -39,11 +46,7 @@ export const authConfig = {
             email: credentials.email,
           },
           include: {
-            organization: {
-              include: {
-                settings: true,
-              },
-            },
+            organization: true,
           },
         });
 
@@ -60,94 +63,83 @@ export const authConfig = {
           return null;
         }
 
-        return user;
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          organizationId: user.organizationId,
+        };
       },
     }),
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (!user.email) {
-        console.error("No email provided by OAuth provider");
-        return false;
-      }
-
       try {
         if (account?.provider === "google") {
-          console.log("Google sign in attempt for:", user.email);
-
-          // Try to find the user first
-          const existingUser = await prisma.user.findFirst({
-            where: { email: user.email },
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
             include: {
-              accounts: true,
               organization: true,
             },
           });
 
-          console.log("Existing user check result:", existingUser);
-
           if (!existingUser) {
-            console.log("Creating new user for:", user.email);
-
-            // Create organization first
+            // Create organization with default settings
             const organization = await prisma.organization.create({
               data: {
                 name: `${user.name}'s Organization`,
                 settings: {
                   create: {
                     lowStockThreshold: 10,
-                    currency: "USD",
+                    currency: "NGN",
                   },
                 },
               },
             });
 
-            // Create the user
-            const newUser = await prisma.user.create({
+            // Create new user with organization
+            await prisma.user.create({
               data: {
-                email: user.email,
-                name: user.name || "Unknown",
-                image: user.image,
-                emailVerified: new Date(),
-                role: "CUSTOMER",
+                email: user.email!,
+                name: user.name!,
+                role: "CUSTOMER" as UserRole,
                 organizationId: organization.id,
+                // Track this signup in activities
+                activities: {
+                  create: {
+                    action: "SIGNUP",
+                    details: "User signed up via Google",
+                  },
+                },
               },
             });
-
-            console.log("New user created:", newUser);
           }
-
           return true;
         }
-
         return true;
       } catch (error) {
-        console.error("Detailed error in signIn callback:", error);
+        console.error("Error in signIn callback:", error);
         return false;
       }
     },
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: token.email! },
-            include: {
-              organization: {
-                include: {
-                  settings: true,
-                },
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+          include: {
+            organization: {
+              include: {
+                settings: true,
               },
             },
-          });
+          },
+        });
 
-          if (dbUser) {
-            token.role = dbUser.role;
-            token.organizationId = dbUser.organizationId;
-            token.settings = dbUser.organization?.settings;
-            token.sub = dbUser.id;
-          }
-        } catch (error) {
-          console.error("Error in jwt callback:", error);
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.organizationId = dbUser.organizationId;
+          token.settings = dbUser.organization.settings;
         }
       }
 
@@ -181,7 +173,6 @@ export const authConfig = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-// Types
 declare module "next-auth" {
   interface Session {
     user: {
@@ -192,13 +183,16 @@ declare module "next-auth" {
       role: UserRole;
       organizationId: string;
       settings?: {
-        id: string;
         lowStockThreshold: number;
         currency: string;
         notificationEmail?: string | null;
         metadata?: any;
       } | null;
     };
+  }
+  interface User {
+    role: UserRole;
+    organizationId?: string;
   }
 }
 
@@ -207,7 +201,6 @@ declare module "next-auth/jwt" {
     role: UserRole;
     organizationId: string;
     settings?: {
-      id: string;
       lowStockThreshold: number;
       currency: string;
       notificationEmail?: string | null;
