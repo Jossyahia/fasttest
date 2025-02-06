@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -13,7 +13,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = params.id;
+    const { id } = await context.params;
 
     // Check if product exists and belongs to user's organization
     const product = await prisma.product.findFirst({
@@ -53,7 +53,7 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -61,7 +61,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = params.id;
+    const { id } = await context.params;
     const data = await req.json();
 
     // Check if product exists and belongs to user's organization

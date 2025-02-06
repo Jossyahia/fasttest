@@ -1,7 +1,7 @@
 // app/api/reports/summary/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { subDays, subMonths, startOfDay, endOfDay } from "date-fns";
+import { subDays, subMonths } from "date-fns";
 
 export async function GET(request: Request) {
   try {

@@ -1,21 +1,24 @@
+// hooks/useProducts.ts
 import { useState, useEffect } from "react";
 import { Product, InventoryStatus } from "@prisma/client";
 
-interface ProductFilters {
-  page?: number;
-  status?: InventoryStatus;
+interface UseProductsFilters {
   search?: string;
+  status?: InventoryStatus;
   warehouseId?: string;
   lowStock?: boolean;
+  page?: number;
 }
 
-export function useProducts({
-  page = 1,
-  status,
-  search,
-  warehouseId,
-  lowStock,
-}: ProductFilters = {}) {
+interface UseProductsReturn {
+  products: Product[];
+  isLoading: boolean;
+  error: string | null;
+  totalPages: number;
+  refreshProducts: () => Promise<void>;
+}
+
+export function useProducts(filters: UseProductsFilters): UseProductsReturn {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,22 +27,26 @@ export function useProducts({
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const params = new URLSearchParams({
-        page: String(page),
-        ...(status && { status }),
-        ...(search && { search }),
-        ...(warehouseId && { warehouseId }),
-        ...(lowStock && { lowStock: String(lowStock) }),
-      });
+      setError(null);
 
-      const response = await fetch(`/api/products?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch products");
+      const queryParams = new URLSearchParams();
+      if (filters.search) queryParams.set("search", filters.search);
+      if (filters.status) queryParams.set("status", filters.status);
+      if (filters.warehouseId)
+        queryParams.set("warehouseId", filters.warehouseId);
+      if (filters.lowStock) queryParams.set("lowStock", "true");
+      if (filters.page) queryParams.set("page", filters.page.toString());
+
+      const response = await fetch(`/api/products?${queryParams}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
 
       const data = await response.json();
       setProducts(data.products);
-      setTotalPages(data.pagination?.pages || 1);
+      setTotalPages(data.totalPages);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch products");
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +54,13 @@ export function useProducts({
 
   useEffect(() => {
     fetchProducts();
-  }, [page, status, search, warehouseId, lowStock]);
+  }, [
+    filters.search,
+    filters.status,
+    filters.warehouseId,
+    filters.lowStock,
+    filters.page,
+  ]);
 
   return {
     products,

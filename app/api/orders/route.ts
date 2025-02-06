@@ -1,9 +1,7 @@
-// app/api/orders/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { Prisma } from "@prisma/client";
 
 // Validation schemas
 const orderItemSchema = z.object({
@@ -40,7 +38,7 @@ function generateOrderNumber() {
   return `ORD-${timestamp}-${random}`;
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.organizationId) {
@@ -76,8 +74,6 @@ export async function GET(req: Request) {
     );
   }
 }
-
-// app/api/orders/route.ts
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -131,8 +127,8 @@ export async function POST(req: Request) {
         },
       });
 
-      // Create order items
-      const orderItems = await prisma.orderItem.createMany({
+      // Create order items without assigning the result to a variable
+      await prisma.orderItem.createMany({
         data: validatedData.items.map((item) => ({
           orderId: newOrder.id,
           productId: item.productId,

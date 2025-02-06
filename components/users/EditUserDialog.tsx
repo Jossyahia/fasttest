@@ -1,7 +1,5 @@
-// components/users/EditUserDialog.tsx
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -61,7 +59,6 @@ export function EditUserDialog({
     },
   });
 
-  // In EditUserDialog component
   const updateUser = useMutation({
     mutationFn: async (data: FormData) => {
       const response = await fetch(`/api/users/${user.id}`, {
@@ -69,14 +66,32 @@ export function EditUserDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+
       if (!response.ok) {
         const error = await response.text();
         throw new Error(error || "Failed to update user");
       }
+
       return response.json();
     },
-    // ... rest of the mutation config
+    onSuccess: () => {
+      // Show success toast
+      toast.success("User updated successfully");
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Reset form
+      form.reset();
+      // Close the modal
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      // Show error toast
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update user"
+      );
+    },
   });
+
   function onSubmit(data: FormData) {
     updateUser.mutate(data);
   }

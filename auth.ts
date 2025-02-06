@@ -1,5 +1,7 @@
-// auth.config.ts
-import NextAuth from "next-auth";
+// authgood.ts
+export const runtime = "nodejs";
+
+import NextAuth, { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -7,14 +9,19 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 
-export const authConfig = {
-  adapter: PrismaAdapter(prisma),
-  debug: true, // Enable debug mode to see more detailed logs
+interface CredentialsType {
+  email: string;
+  password: string;
+}
+
+export const authConfig: NextAuthConfig = {
+  adapter: PrismaAdapter(prisma) as unknown as NextAuthConfig["adapter"],
+  debug: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true, // Add this line
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: "consent",
@@ -29,20 +36,23 @@ export const authConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+      async authorize(
+        credentials: Partial<Record<"email" | "password", unknown>>,
+        req: Request
+      ) {
+        if (
+          !credentials ||
+          typeof credentials.email !== "string" ||
+          typeof credentials.password !== "string"
+        ) {
           return null;
         }
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
+          where: { email: credentials.email },
           include: {
             organization: {
-              include: {
-                settings: true,
-              },
+              include: { settings: true },
             },
           },
         });
@@ -51,9 +61,10 @@ export const authConfig = {
           return null;
         }
 
+        // Cast credentials.password to string explicitly.
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
+          credentials.password as string,
+          user.password as string
         );
 
         if (!isPasswordValid) {
@@ -65,7 +76,7 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }): Promise<boolean> {
       if (!user.email) {
         console.error("No email provided by OAuth provider");
         return false;
@@ -73,37 +84,25 @@ export const authConfig = {
 
       try {
         if (account?.provider === "google") {
-          console.log("Google sign in attempt for:", user.email);
-
-          // Try to find the user first
           const existingUser = await prisma.user.findFirst({
             where: { email: user.email },
-            include: {
-              accounts: true,
-              organization: true,
-            },
+            include: { accounts: true, organization: true },
           });
 
-          console.log("Existing user check result:", existingUser);
-
           if (!existingUser) {
-            console.log("Creating new user for:", user.email);
-
-            // Create organization first
             const organization = await prisma.organization.create({
               data: {
                 name: `${user.name}'s Organization`,
                 settings: {
                   create: {
                     lowStockThreshold: 10,
-                    currency: "USD",
+                    currency: "NGN",
                   },
                 },
               },
             });
 
-            // Create the user
-            const newUser = await prisma.user.create({
+            await prisma.user.create({
               data: {
                 email: user.email,
                 name: user.name || "Unknown",
@@ -113,29 +112,33 @@ export const authConfig = {
                 organizationId: organization.id,
               },
             });
-
-            console.log("New user created:", newUser);
           }
-
           return true;
         }
-
         return true;
       } catch (error) {
         console.error("Detailed error in signIn callback:", error);
         return false;
       }
     },
-    async jwt({ token, user, trigger, session }) {
+    async jwt({
+      token,
+      user,
+      trigger,
+      session,
+    }: {
+      token: any;
+      user?: any;
+      trigger?: string;
+      session?: any;
+    }) {
       if (user) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email! },
             include: {
               organization: {
-                include: {
-                  settings: true,
-                },
+                include: { settings: true },
               },
             },
           });
@@ -158,7 +161,7 @@ export const authConfig = {
 
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token && session.user) {
         session.user.id = token.sub!;
         session.user.role = token.role as UserRole;
@@ -173,15 +176,14 @@ export const authConfig = {
     error: "/auth/error",
   },
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: "jwt" as const,
+    maxAge: 30 * 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET as string,
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-// Types
 declare module "next-auth" {
   interface Session {
     user: {
@@ -200,9 +202,7 @@ declare module "next-auth" {
       } | null;
     };
   }
-}
 
-declare module "next-auth/jwt" {
   interface JWT {
     role: UserRole;
     organizationId: string;

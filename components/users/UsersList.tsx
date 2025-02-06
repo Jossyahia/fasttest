@@ -1,7 +1,6 @@
 // components/users/UsersList.tsx
 'use client'
 
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Table,
@@ -11,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { User, UserRole } from '@prisma/client'
 import { Badge } from '@/components/ui/badge'
 import { UserActions } from './UserActions'
 import { UsersListSkeleton } from './UsersListSkeleton'

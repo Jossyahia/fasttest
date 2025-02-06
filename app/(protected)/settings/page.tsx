@@ -1,10 +1,11 @@
-// app/settings/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useSession } from "next-auth/react";
+import { Settings as SettingsIcon, Save, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,113 +13,134 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "react-hot-toast";
 
 interface Settings {
+  id: string;
   lowStockThreshold: number;
   currency: string;
   notificationEmail: string | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
 }
 
+const currencies = ["NGN", "USD", "EUR", "GBP"];
+
 export default function SettingsPage() {
+  const { data: session } = useSession();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    async function fetchSettings() {
+      if (!session) return;
 
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch("/api/settings");
-      if (!response.ok) throw new Error("Failed to fetch settings");
-      const data = await response.json();
-      setSettings(data);
-    } catch (error) {
-      setError("Failed to load settings");
-    } finally {
-      setLoading(false);
+      try {
+        const response = await fetch("/api/settings");
+        if (!response.ok) throw new Error("Failed to fetch settings");
+        const data: Settings = await response.json();
+        setSettings(data);
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load settings",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    fetchSettings();
+  }, [session]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setIsSaving(true);
 
     try {
+      const formData = new FormData(e.currentTarget);
+      const data = {
+        lowStockThreshold: parseInt(
+          formData.get("lowStockThreshold") as string
+        ),
+        currency: formData.get("currency") as string,
+        notificationEmail: formData.get("notificationEmail") as string,
+        metadata: settings?.metadata,
+      };
+
       const response = await fetch("/api/settings", {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) throw new Error("Failed to update settings");
 
-      setSuccess("Settings updated successfully");
+      const updatedSettings: Settings = await response.json();
+      setSettings(updatedSettings);
+      toast({
+        title: "Success",
+        description: "Settings updated successfully",
+      });
     } catch (error) {
-      setError("Failed to update settings");
+      console.error("Error updating settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update settings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  if (loading) return <div className="flex justify-center p-8">Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-pulse text-xl">Loading settings...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <div className="container mx-auto max-w-2xl py-10 px-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Organization Settings</CardTitle>
+        <CardHeader className="flex flex-row items-center space-x-4 pb-4">
+          <SettingsIcon className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <CardTitle>Organization Settings</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {success && (
-              <Alert>
-                <AlertDescription>{success}</AlertDescription>
-              </Alert>
-            )}
-
             <div className="space-y-2">
               <label className="text-sm font-medium">Low Stock Threshold</label>
               <Input
+                name="lowStockThreshold"
                 type="number"
-                value={settings?.lowStockThreshold}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev!,
-                    lowStockThreshold: parseInt(e.target.value),
-                  }))
-                }
-                className="w-full"
+                defaultValue={settings?.lowStockThreshold}
+                min={1}
+                required
               />
+              <p className="text-sm text-muted-foreground">
+                Receive alerts when product quantity falls below this number
+              </p>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Currency</label>
-              <Select
-                value={settings?.currency}
-                onValueChange={(value) =>
-                  setSettings((prev) => ({ ...prev!, currency: value }))
-                }
-              >
+              <Select name="currency" defaultValue={settings?.currency}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NGN">Nigerian Naira (NGN)</SelectItem>
-                  <SelectItem value="USD">US Dollar (USD)</SelectItem>
-                  <SelectItem value="EUR">Euro (EUR)</SelectItem>
-                  <SelectItem value="GBP">British Pound (GBP)</SelectItem>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -126,20 +148,32 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Notification Email</label>
               <Input
+                name="notificationEmail"
                 type="email"
-                value={settings?.notificationEmail || ""}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev!,
-                    notificationEmail: e.target.value,
-                  }))
-                }
-                className="w-full"
+                defaultValue={settings?.notificationEmail || ""}
+                placeholder="notifications@example.com"
               />
+              <p className="text-sm text-muted-foreground">
+                Email address for system notifications and alerts
+              </p>
             </div>
 
-            <Button type="submit" className="w-full">
-              Save Settings
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Changes will be applied immediately across your organization
+              </p>
+            </div>
+
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Settings
+                </>
+              )}
             </Button>
           </form>
         </CardContent>

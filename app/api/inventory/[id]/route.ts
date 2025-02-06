@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { updateProductSchema } from "@/lib/validations/product";
 import { z } from "zod";
-import type { UpdateProductInput } from "@/types/product";
 
 export async function GET(
   req: Request,

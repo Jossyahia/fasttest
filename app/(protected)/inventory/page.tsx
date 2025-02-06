@@ -1,17 +1,23 @@
-import { Metadata } from "next";
-import InventoryList from "@/components/inventory/InventoryList";
-import InventoryHeader from "@/components/inventory/InventoryHeader";
+// app/(dashboard)/inventory/page.tsx
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InventoryTable } from "@/components/inventory/inventory-table"; // Make sure this path is correct
 
-export const metadata: Metadata = {
-  title: "Inventory Management",
-  description: "Manage your inventory items",
-};
+export default async function InventoryPage() {
+   const session = await auth();
 
-export default function InventoryPage() {
+   if (!session) {
+     redirect("/login");
+   }
   return (
-    <div className="space-y-6">
-      <InventoryHeader />
-      <InventoryList />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Inventory Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <InventoryTable />
+      </CardContent>
+    </Card>
   );
 }

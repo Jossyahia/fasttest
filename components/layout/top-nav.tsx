@@ -1,7 +1,5 @@
-// components/layouts/top-nav.tsx
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Bell, Search, Menu } from "lucide-react";
@@ -9,17 +7,15 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "./user-nav";
-import { MobileNav } from "./mobile-nav";
+import NotificationsComponent from "@/components/notifications/NotificationsComponent";
 
 export function TopNav() {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { data: session } = useSession();
 
   return (
@@ -35,7 +31,6 @@ export function TopNav() {
         <Button
           variant="ghost"
           className="mr-2 px-0 text-base hover:bg-transparent focus:ring-0 md:hidden"
-          onClick={() => setShowMobileMenu(true)}
         >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle Menu</span>
@@ -64,15 +59,15 @@ export function TopNav() {
               <DropdownMenuContent align="end" className="w-[300px]">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* Add notification items here */}
+                <NotificationsComponent />
               </DropdownMenuContent>
             </DropdownMenu>
             <UserNav user={session?.user} />
           </nav>
         </div>
       </div>
-  
     </header>
   );
 }
+
 export default TopNav;

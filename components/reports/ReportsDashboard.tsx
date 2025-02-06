@@ -1,4 +1,3 @@
-// components/reports/ReportsDashboard.tsx
 "use client";
 
 import { useState } from "react";
@@ -15,19 +14,32 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import {
-  TrendingUp,
-  ShoppingBag,
-  DollarSign,
-  Package,
-  Users,
-} from "lucide-react";
+import { ShoppingBag, DollarSign, Package, Users } from "lucide-react";
 
 interface SummaryCardProps {
   title: string;
   value: string | number;
   trend?: number;
   icon: React.ReactNode;
+}
+
+interface SummaryData {
+  totalSales: number;
+  salesTrend: number;
+  totalOrders: number;
+  ordersTrend: number;
+  newCustomers: number;
+  customersTrend: number;
+  lowStockItems: number;
+}
+
+interface SalesData {
+  trend: { date: string; sales: number; orders: number }[];
+}
+
+interface TopProducts {
+  selling: { name: string; quantity: number }[];
+  revenue: { name: string; revenue: number }[];
 }
 
 const SummaryCard = ({ title, value, trend, icon }: SummaryCardProps) => (
@@ -56,7 +68,11 @@ export default function ReportsDashboard() {
   const [dateRange, setDateRange] = useState("month"); // week, month, year
 
   // Fetch summary statistics
-  const { data: summaryData } = useQuery({
+  const {
+    data: summaryData,
+    isLoading: isSummaryLoading,
+    error: summaryError,
+  } = useQuery<SummaryData>({
     queryKey: ["reports", "summary", dateRange],
     queryFn: async () => {
       const response = await fetch(`/api/reports/summary?range=${dateRange}`);
@@ -66,7 +82,11 @@ export default function ReportsDashboard() {
   });
 
   // Fetch sales data
-  const { data: salesData } = useQuery({
+  const {
+    data: salesData,
+    isLoading: isSalesLoading,
+    error: salesError,
+  } = useQuery<SalesData>({
     queryKey: ["reports", "sales", dateRange],
     queryFn: async () => {
       const response = await fetch(`/api/reports/sales?range=${dateRange}`);
@@ -76,7 +96,11 @@ export default function ReportsDashboard() {
   });
 
   // Fetch top products
-  const { data: topProducts } = useQuery({
+  const {
+    data: topProducts,
+    isLoading: isTopProductsLoading,
+    error: topProductsError,
+  } = useQuery<TopProducts>({
     queryKey: ["reports", "top-products"],
     queryFn: async () => {
       const response = await fetch("/api/reports/top-products");
@@ -84,6 +108,21 @@ export default function ReportsDashboard() {
       return response.json();
     },
   });
+
+  if (isSummaryLoading || isSalesLoading || isTopProductsLoading) {
+    return <div className="text-center py-6">Loading...</div>;
+  }
+
+  if (summaryError || salesError || topProductsError) {
+    return (
+      <div className="text-center py-6 text-red-600">
+        Error:{" "}
+        {summaryError?.message ||
+          salesError?.message ||
+          topProductsError?.message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

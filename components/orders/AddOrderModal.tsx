@@ -58,7 +58,7 @@ export default function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: customers, isLoading: isLoadingCustomers } = useQuery<{
+  const { data: customers } = useQuery<{
     customers: Customer[];
   }>({
     queryKey: ["customers"],
@@ -69,7 +69,7 @@ export default function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     },
   });
 
-  const { data: products, isLoading: isLoadingProducts } = useQuery<{
+  const { data: products } = useQuery<{
     products: Product[];
   }>({
     queryKey: ["products"],

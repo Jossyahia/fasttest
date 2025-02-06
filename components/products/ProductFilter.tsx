@@ -110,6 +110,12 @@ export default function ProductFilter({ onFilterChange }: ProductFiltersProps) {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6 space-y-4">
+      {error && (
+        <div className="p-4 border border-red-200 rounded-md bg-red-50">
+          <h2 className="text-red-800 font-semibold">Something went wrong:</h2>
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />

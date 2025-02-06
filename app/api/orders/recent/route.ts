@@ -19,6 +19,7 @@ export async function GET() {
 
     return NextResponse.json(orders);
   } catch (error) {
+    console.error("Error fetching recent orders:", error);
     return NextResponse.json(
       { error: "Failed to fetch recent orders" },
       { status: 500 }

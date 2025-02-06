@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -16,6 +17,7 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  Warehouse,
 } from "lucide-react";
 
 // UI Components
@@ -30,9 +32,8 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
+  CardDescription,
   CardTitle,
 } from "@/components/ui/card";
 import {
@@ -64,7 +65,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -73,6 +73,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
+
 // Types
 interface Product {
   id: string;
@@ -85,6 +87,8 @@ interface Product {
   createdAt: string;
   updatedAt: string;
 }
+
+type ProductFormData = z.infer<typeof productSchema>;
 
 // Utilities
 function cn(...inputs: (string | undefined)[]) {
@@ -101,7 +105,185 @@ const productSchema = z.object({
   location: z.string().optional(),
 });
 
-// Add EditProductDialog component
+// Components
+const StatusBadge = ({ quantity, minStock }: { quantity: number; minStock: number }) => {
+  const getStatusConfig = (quantity: number, minStock: number) => {
+    if (quantity <= 0) {
+      return {
+        label: "Out of Stock",
+        className: "bg-red-100 text-red-800 border-red-200",
+      };
+    }
+    if (quantity <= minStock) {
+      return {
+        label: "Low Stock",
+        className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      };
+    }
+    return {
+      label: "In Stock",
+      className: "bg-green-100 text-green-800 border-green-200",
+    };
+  };
+
+  const status = getStatusConfig(quantity, minStock);
+
+  return (
+    <Badge variant="outline" className={status.className}>
+      {status.label}
+    </Badge>
+  );
+};
+
+const QuantityIndicator = ({ quantity, minStock }: { quantity: number; minStock: number }) => {
+  const getQuantityColor = (quantity: number, minStock: number) => {
+    if (quantity <= 0) return "text-red-600";
+    if (quantity <= minStock) return "text-yellow-600";
+    return "text-green-600";
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn("font-medium", getQuantityColor(quantity, minStock))}>
+        {quantity}
+      </span>
+      <span className="text-xs text-gray-500">(Min: {minStock})</span>
+    </div>
+  );
+};
+
+const LocationBadge = ({ location }: { location: string | null }) => {
+  return (
+    <div className="flex items-center gap-2">
+      <Warehouse className="h-4 w-4 text-gray-400" />
+      <span className="text-sm text-gray-600">
+        {location || "No location"}
+      </span>
+    </div>
+  );
+};
+
+const ProductDetailsDialog = ({
+  open,
+  onOpenChange,
+  product,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  product: Product | null;
+}) => {
+  if (!product) return null;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span>{product.name}</span>
+            <StatusBadge
+              quantity={product.quantity}
+              minStock={product.minStock}
+            />
+          </DialogTitle>
+          <DialogDescription>
+            Detailed information about this inventory item
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-6">
+          {/* Basic Information Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Basic Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">SKU</Label>
+                <p className="font-medium">{product.sku}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">Location</Label>
+                <LocationBadge location={product.location} />
+              </div>
+            </div>
+          </div>
+
+          {/* Inventory Status Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Inventory Status
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">
+                  Current Quantity
+                </Label>
+                <div className="flex items-center gap-2">
+                  <QuantityIndicator
+                    quantity={product.quantity}
+                    minStock={product.minStock}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">
+                  Minimum Stock Level
+                </Label>
+                <p className="font-medium">{product.minStock} units</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Description Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Description</h3>
+            <div className="rounded-lg bg-gray-50 p-4">
+              <p className="text-sm text-gray-700">
+                {product.description || "No description available"}
+              </p>
+            </div>
+          </div>
+
+          {/* Timestamps Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">History</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">Created At</Label>
+                <p className="text-sm text-gray-700">
+                  {formatDate(product.createdAt)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">Last Updated</Label>
+                <p className="text-sm text-gray-700">
+                  {formatDate(product.updatedAt)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const EditProductDialog = ({
   open,
   onOpenChange,
@@ -112,10 +294,10 @@ const EditProductDialog = ({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product | null;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: ProductFormData) => void;
   isLoading: boolean;
 }) => {
-  const form = useForm({
+  const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       sku: product?.sku || "",
@@ -262,70 +444,6 @@ const EditProductDialog = ({
     </Dialog>
   );
 };
-// Components
-const StatusBadge = ({
-  quantity,
-  minStock,
-}: {
-  quantity: number;
-  minStock: number;
-}) => {
-  const getStatusConfig = (quantity: number, minStock: number) => {
-    if (quantity <= 0) {
-      return {
-        label: "Out of Stock",
-        className:
-          "bg-red-100 text-red-800 border-red-200 hover:bg-red-100 hover:text-red-800",
-      };
-    }
-    if (quantity <= minStock) {
-      return {
-        label: "Low Stock",
-        className:
-          "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100 hover:text-yellow-800",
-      };
-    }
-    return {
-      label: "In Stock",
-      className:
-        "bg-green-100 text-green-800 border-green-200 hover:bg-green-100 hover:text-green-800",
-    };
-  };
-
-  const status = getStatusConfig(quantity, minStock);
-
-  return (
-    <Badge
-      variant="outline"
-      className={cn("text-xs font-medium px-3 py-1", status.className)}
-    >
-      {status.label}
-    </Badge>
-  );
-};
-
-const QuantityIndicator = ({
-  quantity,
-  minStock,
-}: {
-  quantity: number;
-  minStock: number;
-}) => {
-  const getQuantityColor = (quantity: number, minStock: number) => {
-    if (quantity <= 0) return "text-red-600";
-    if (quantity <= minStock) return "text-yellow-600";
-    return "text-green-600";
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      <span className={cn("font-medium", getQuantityColor(quantity, minStock))}>
-        {quantity}
-      </span>
-      <span className="text-xs text-gray-500">(Min: {minStock})</span>
-    </div>
-  );
-};
 
 const InventoryList = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -410,7 +528,7 @@ const InventoryList = () => {
     setIsDetailsOpen(true);
   };
 
-  const handleSubmitEdit = async (formData: Product) => {
+  const handleSubmitEdit = (formData: ProductFormData) => {
     if (selectedProduct) {
       const updatedProduct = {
         ...selectedProduct,
@@ -425,7 +543,7 @@ const InventoryList = () => {
       <Card>
         <CardContent className="py-10">
           <div className="flex items-center justify-center space-x-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-900"></div>
+            <Loader2 className="h-4 w-4 animate-spin" />
             <div className="text-sm text-gray-600">Loading inventory...</div>
           </div>
         </CardContent>
@@ -494,10 +612,7 @@ const InventoryList = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-gray-400" />
-                      {product.location || "No location"}
-                    </div>
+                    <LocationBadge location={product.location} />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -539,81 +654,12 @@ const InventoryList = () => {
         </CardContent>
       </Card>
 
-      {/* Product Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Product Details</DialogTitle>
-            <DialogDescription>
-              Detailed information about the selected product
-            </DialogDescription>
-          </DialogHeader>
-          {selectedProduct && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">SKU</h4>
-                  <p>{selectedProduct.sku}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Name</h4>
-                  <p>{selectedProduct.name}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">
-                    Quantity
-                  </h4>
-                  <QuantityIndicator
-                    quantity={selectedProduct.quantity}
-                    minStock={selectedProduct.minStock}
-                  />
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Status</h4>
-                  <div className="mt-1">
-                    <StatusBadge
-                      quantity={selectedProduct.quantity}
-                      minStock={selectedProduct.minStock}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">
-                    Location
-                  </h4>
-                  <p>{selectedProduct.location || "-"}</p>
-                </div>
-                <div className="col-span-2">
-                  <h4 className="text-sm font-medium text-gray-500">
-                    Description
-                  </h4>
-                  <p className="text-gray-700">
-                    {selectedProduct.description || "-"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-medium text-gray-500">
-                    Created At
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {new Date(selectedProduct.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-medium text-gray-500">
-                    Last Updated
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {new Date(selectedProduct.updatedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ProductDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        product={selectedProduct}
+      />
 
-      {/* Edit Product Dialog */}
       <EditProductDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
@@ -621,7 +667,7 @@ const InventoryList = () => {
         onSubmit={handleSubmitEdit}
         isLoading={editMutation.isPending}
       />
-      {/* Delete Confirmation Dialog */}
+
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -631,7 +677,7 @@ const InventoryList = () => {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              product "{selectedProduct?.name}" from the inventory.
+              product &quot;{selectedProduct?.name}&quot; from the inventory.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -657,4 +703,6 @@ const InventoryList = () => {
     </div>
   );
 };
+
 export default InventoryList;
+    

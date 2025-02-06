@@ -1,39 +1,282 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-## Getting Started
+generator client {
+  provider = "prisma-client-js"
+}
 
-First, run the development server:
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  CUSTOMER
+  PARTNER
+}
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+  THIRDPARTY
+}
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  REFUNDED
+  FAILED
+}
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+enum PaymentType {
+  PREPAID
+  PAY_ON_DELIVERY
+  CREDIT
+}
 
-## Learn More
+enum InventoryStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
 
-To learn more about Next.js, take a look at the following resources:
+enum MovementType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  TRANSFER
+}
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+// Authentication Models
+model Account {
+  id                String    @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?   @db.Text
+  access_token      String?   @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?   @db.Text
+  session_state     String?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
 
-## Deploy on Vercel
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+  @@index([userId])
+}
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id                String              @id @default(cuid())
+  name              String?
+  email             String              @unique
+  emailVerified     DateTime?
+  password          String?
+  image             String?
+  role              UserRole            @default(CUSTOMER)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  organizationId    String
+  accounts          Account[]
+  sessions          Session[]
+  activities        Activity[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+// Core Business Models
+model Organization {
+  id            String        @id @default(cuid())
+  name          String
+  settings      Settings?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  users         User[]
+  customers     Customer[]
+  products      Product[]
+  warehouses    Warehouse[]
+  orders        Order[]
+
+  @@index([name])
+}
+
+model Customer {
+  id            String        @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  type          CustomerType
+  address       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String
+  orders        Order[]
+
+  @@unique([email, organizationId])
+  @@index([organizationId])
+}
+
+model Product {
+  id            String           @id @default(cuid())
+  sku           String           @unique
+  name          String
+  description   String?
+  quantity      Int              @default(0)
+  minStock      Int              @default(10)
+  status        InventoryStatus  @default(ACTIVE)
+  location      String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  organization  Organization     @relation(fields: [organizationId], references: [id])
+  organizationId String
+  warehouse     Warehouse        @relation(fields: [warehouseId], references: [id])
+  warehouseId   String
+  orderItems    OrderItem[]
+  movements     InventoryMovement[]
+
+  @@index([sku])
+  @@index([organizationId])
+  @@index([warehouseId])
+}
+
+model Warehouse {
+  id            String        @id @default(cuid())
+  name          String
+  location      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String
+  products      Product[]
+
+  @@index([organizationId])
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNumber   String        @unique
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentType   PaymentType   @default(PREPAID)
+  total         Float
+  shippingAddress String?     // Added this field
+  notes         String?       // Added this field
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  customerId    String
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String
+  items         OrderItem[]
+  movements     InventoryMovement[]
+
+  @@index([orderNumber])
+  @@index([customerId])
+  @@index([organizationId])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  price     Float
+  
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model InventoryMovement {
+  id            String        @id @default(cuid())
+  type          MovementType
+  quantity      Int
+  reference     String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  product       Product       @relation(fields: [productId], references: [id])
+  productId     String
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  order         Order?        @relation(fields: [orderId], references: [id])
+  orderId       String?
+
+  @@index([productId])
+  @@index([userId])
+  @@index([orderId])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  @@index([userId])
+}
+
+model Settings {
+  id                String        @id @default(cuid())
+  lowStockThreshold Int           @default(10)
+  currency          String        @default("NGN")
+  notificationEmail String?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  organization      Organization  @relation(fields: [organizationId], references: [id])
+  organizationId    String        @unique
+}
+
+use this schema to create the user notification system from the activity modele, components, and the corresponding api. Use nextjs 14 app router, authjs and prisma orm best practices . include loading skeletopn on the components
+
+
 
 
 

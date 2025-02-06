@@ -1,4 +1,3 @@
-// components/customers/EditCustomerModal.tsx
 "use client";
 
 import { useState } from "react";
@@ -6,6 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+//import { Customer } from "@/types/customer"; // Import the shared Customer type
+
 
 const customerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -22,7 +23,7 @@ interface Customer {
   name: string;
   email: string;
   phone: string;
-  type: "RETAIL" | "WHOLESALE" | "CORPORATE";
+  type: "RETAIL" | "WHOLESALE" | "THIRDPARTY"; // Updated to match the schema
   address: string;
 }
 

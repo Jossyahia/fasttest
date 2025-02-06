@@ -1,4 +1,6 @@
 // app/(protected)/users/page.tsx
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { UsersList } from "@/components/users/UsersList";
 import { UsersListSkeleton } from "@/components/users/UsersListSkeleton";
@@ -6,7 +8,13 @@ import { CreateUser } from "@/components/users/CreateUser";
 import { Providers } from "@/components/providers/providers";
 
 
-export default function UsersPage() {
+export default async function UsersPage() {
+
+     const session = await auth();
+
+     if (!session) {
+       redirect("/login");
+     }
   return (
     <Providers>
       <div className="container mx-auto p-6">

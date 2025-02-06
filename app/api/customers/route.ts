@@ -1,56 +1,26 @@
-// app/api/customers/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { CustomerType } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-// Type definitions
-interface CustomerResponse {
-  customers?: any[];
-  error?: string;
-  issues?: z.ZodIssue[];
-}
+export async function GET() {
+  // Verify authentication using Auth.js.
+  const session = await auth();
 
-// Validation schema
-const customerSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(1, "Phone number is required"),
-  type: z.enum(["RETAIL", "WHOLESALE", "THIRDPARTY"] as const),
-  address: z.string().optional(),
-});
+  // Check if session exists and has a user
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-export async function GET(request: NextRequest) {
+  const organizationId = session.user.organizationId;
+
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const searchParams = request.nextUrl.searchParams;
-    const search = searchParams.get("search");
-
+    // Fetch all customers for the organization.
     const customers = await prisma.customer.findMany({
-      where: {
-        organizationId: session.user.organizationId,
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { email: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { organizationId },
     });
-
     return NextResponse.json({ customers });
   } catch (error) {
-    console.error("Failed to fetch customers:", error);
+    console.error("Error fetching customers:", error);
     return NextResponse.json(
       { error: "Failed to fetch customers" },
       { status: 500 }
@@ -58,70 +28,37 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+  const session = await auth();
+
+  // Check if session exists and has a user
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const organizationId = session.user.organizationId;
+
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const body = await request.json();
+    const { name, email, phone, type, address } = body;
 
-    const data = await request.json();
-
-    // Validate request data
-    const validationResult = customerSchema.safeParse(data);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid input data",
-          issues: validationResult.error.issues,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check for existing customer in the same organization
-    const existingCustomer = await prisma.customer.findFirst({
-      where: {
-        email: data.email,
-        organizationId: session.user.organizationId,
-      },
-    });
-
-    if (existingCustomer) {
-      return NextResponse.json(
-        {
-          error: "Customer with this email already exists",
-        },
-        { status: 409 }
-      );
-    }
-
-    // Create new customer
+    // Create a new customer associated with the current organization.
     const customer = await prisma.customer.create({
       data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        type: data.type as CustomerType,
-        address: data.address,
-        organizationId: session.user.organizationId,
-      },
-    });
-
-    // Log activity
-    await prisma.activity.create({
-      data: {
-        action: "CUSTOMER_CREATED",
-        details: `Customer ${customer.name} created`,
-        userId: session.user.id,
+        name,
+        email,
+        phone,
+        type, // Must match one of your enum values (RETAIL, WHOLESALE, THIRDPARTY)
+        address,
+        organization: { connect: { id: organizationId } },
       },
     });
 
     return NextResponse.json({ customer }, { status: 201 });
   } catch (error) {
-    console.error("Failed to create customer:", error);
+    console.error("Error creating customer:", error);
     return NextResponse.json(
-      { error: "Failed to create customer" },
+      { error: "Failed to add customer" },
       { status: 500 }
     );
   }

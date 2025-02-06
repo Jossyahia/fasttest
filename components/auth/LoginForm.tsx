@@ -56,6 +56,7 @@ export default function LoginForm() {
       router.push("/dashboard");
       router.refresh();
     } catch (error) {
+      console.error("Failed to update notification settings:", error);
       setError("An error occurred during sign in");
     } finally {
       setIsLoading(false);

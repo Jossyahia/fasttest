@@ -1,18 +1,18 @@
-// app/api/settings/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
+
 export async function GET() {
-  const session = await auth();
-
-  if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
   try {
+    const session = await auth();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
+      where: { id: session.user.id },
       include: {
         organization: {
           include: {
@@ -22,31 +22,48 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(user?.organization.settings);
+    if (!user || !user.organization.settings) {
+      return NextResponse.json(
+        { error: "Settings not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(user.organization.settings);
   } catch (error) {
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error("Settings fetch error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-export async function PATCH(req: Request) {
-  const session = await auth();
-
-  if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
+export async function PUT(request: NextRequest) {
   try {
-    const body = await req.json();
+    const session = await auth();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
     const { lowStockThreshold, currency, notificationEmail, metadata } = body;
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email! },
-      select: { organizationId: true },
+      where: { id: session.user.id },
+      include: {
+        organization: true,
+      },
     });
 
-    const settings = await prisma.settings.upsert({
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updatedSettings = await prisma.settings.upsert({
       where: {
-        organizationId: user!.organizationId,
+        organizationId: user.organization.id,
       },
       update: {
         lowStockThreshold,
@@ -55,16 +72,20 @@ export async function PATCH(req: Request) {
         metadata,
       },
       create: {
-        organizationId: user!.organizationId,
-        lowStockThreshold,
-        currency,
+        organizationId: user.organization.id,
+        lowStockThreshold: lowStockThreshold || 10,
+        currency: currency || "NGN",
         notificationEmail,
         metadata,
       },
     });
 
-    return NextResponse.json(settings);
+    return NextResponse.json(updatedSettings);
   } catch (error) {
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error("Settings update error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

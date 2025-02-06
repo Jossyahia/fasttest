@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,7 +11,8 @@ interface DashboardStats {
   revenueTrend: number;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
+  // Added underscore to suppress unused variable warning
   try {
     const [totalProducts, totalOrders, totalCustomers, revenue] =
       await Promise.all([

@@ -1,4 +1,3 @@
-// components/orders/OrderList.tsx
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +6,7 @@ import { Edit, Eye, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import EditOrderModal from "./EditOrderModal";
 import OrderDetailsModal from "./OrderDetailsModal";
+import { OrderListSkeleton } from "./OrderListSkeleton";
 
 interface OrderItem {
   id: string;
@@ -38,7 +38,11 @@ export default function OrderList() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  const { data: orders, isLoading } = useQuery<Order[]>({
+  const {
+    data: orders,
+    isLoading,
+    error,
+  } = useQuery<Order[]>({
     queryKey: ["orders"],
     queryFn: async () => {
       const response = await fetch("/api/orders");
@@ -67,15 +71,22 @@ export default function OrderList() {
     return colors[status];
   };
 
-  if (isLoading) {
+  // Error handling
+  if (error) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center min-h-[400px] text-red-500">
+        Failed to load orders: {error.message}
       </div>
     );
   }
 
-  if (!orders) {
+  // Loading state
+  if (isLoading) {
+    return <OrderListSkeleton />;
+  }
+
+  // No orders found
+  if (!orders || orders.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[400px] text-gray-500">
         No orders found

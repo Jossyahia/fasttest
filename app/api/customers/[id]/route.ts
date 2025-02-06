@@ -1,122 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/customers/[id]/route.ts
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
 
-// Type definitions
-type CustomerResponse = {
-  customer?: any;
-  success?: boolean;
-  error?: string;
-  issues?: z.ZodIssue[];
-};
-
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-// Validation schema
-const customerUpdateSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(1, "Phone number is required"),
-  type: z.enum(["RETAIL", "WHOLESALE", "THIRDPARTY"]),
-  address: z.string().optional(),
-});
-
-// Helper function to check if customer exists
-async function checkCustomerExists(id: string) {
-  const customer = await prisma.customer.findUnique({
-    where: { id },
-  });
-  return customer;
-}
-
-// GET handler
-export async function GET(
-  request: NextRequest,
-  { params }: RouteContext
-): Promise<NextResponse<CustomerResponse>> {
-  try {
-    const { id } = await params;
-    const customer = await checkCustomerExists(id);
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ customer });
-  } catch (error) {
-    console.error("Failed to fetch customer:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch customer" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT handler
+// Note: The context parameter’s type indicates that `params` is a Promise.
 export async function PUT(
-  request: NextRequest,
-  { params }: RouteContext
-): Promise<NextResponse<CustomerResponse>> {
-  try {
-    const { id } = await params;
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // Await dynamic route parameters.
+  const { id } = await params;
+  const session = await auth();
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const organizationId = session.user.organizationId;
 
-    // Check if customer exists
-    const existingCustomer = await checkCustomerExists(id);
-    if (!existingCustomer) {
+  try {
+    const body = await request.json();
+    const { name, email, phone, type, address } = body;
+
+    // Update the customer only if it belongs to the authenticated organization.
+    const result = await prisma.customer.updateMany({
+      where: { id, organizationId },
+      data: { name, email, phone, type, address },
+    });
+
+    if (result.count === 0) {
       return NextResponse.json(
         { error: "Customer not found" },
         { status: 404 }
       );
     }
-
-    const data = await request.json();
-
-    // Validate request data
-    const validationResult = customerUpdateSchema.safeParse(data);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid input data", issues: validationResult.error.issues },
-        { status: 400 }
-      );
-    }
-
-    // Check if email is being changed and if it already exists
-    const emailConflict = await prisma.customer.findFirst({
-      where: {
-        email: data.email,
-        NOT: {
-          id,
-        },
-      },
-    });
-
-    if (emailConflict) {
-      return NextResponse.json(
-        { error: "Email already in use by another customer" },
-        { status: 409 }
-      );
-    }
-
-    // Update customer
-    const updatedCustomer = await prisma.customer.update({
-      where: { id },
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone ?? null,
-        type: data.type,
-        address: data.address ?? null,
-      },
-    });
-
-    return NextResponse.json({ customer: updatedCustomer });
+    return NextResponse.json({ message: "Customer updated successfully" });
   } catch (error) {
-    console.error("Failed to update customer:", error);
+    console.error("Error updating customer:", error);
     return NextResponse.json(
       { error: "Failed to update customer" },
       { status: 500 }
@@ -124,30 +42,33 @@ export async function PUT(
   }
 }
 
-// DELETE handler
 export async function DELETE(
-  request: NextRequest,
-  { params }: RouteContext
-): Promise<NextResponse<CustomerResponse>> {
-  try {
-    const { id } = await params;
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // Await dynamic route parameters.
+  const { id } = await params;
+  const session = await auth();
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const organizationId = session.user.organizationId;
 
-    // Check if customer exists
-    const existingCustomer = await checkCustomerExists(id);
-    if (!existingCustomer) {
+  try {
+    // Delete the customer only if it belongs to the authenticated organization.
+    const result = await prisma.customer.deleteMany({
+      where: { id, organizationId },
+    });
+
+    if (result.count === 0) {
       return NextResponse.json(
         { error: "Customer not found" },
         { status: 404 }
       );
     }
-
-    await prisma.customer.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ message: "Customer deleted successfully" });
   } catch (error) {
-    console.error("Failed to delete customer:", error);
+    console.error("Error deleting customer:", error);
     return NextResponse.json(
       { error: "Failed to delete customer" },
       { status: 500 }

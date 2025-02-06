@@ -1,18 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest } from "next/server";
 
-// Remove edge runtime configuration
 export const dynamic = "force-dynamic";
 
-interface LowStockItem {
-  id: string;
-  name: string;
-  sku: string;
-  quantity: number;
-  minStock: number;
-}
 
-export async function GET(request: NextRequest) {
+
+export async function GET() {
   try {
     const lowStockItems = await prisma.product.findMany({
       where: {
@@ -33,10 +25,9 @@ export async function GET(request: NextRequest) {
       take: 5,
     });
 
-    return Response.json(lowStockItems as LowStockItem[]);
+    return Response.json(lowStockItems);
   } catch (error) {
     console.error("Low stock items fetch error:", error);
-    
     return Response.json(
       { error: "Failed to fetch low stock items" },
       { status: 500 }

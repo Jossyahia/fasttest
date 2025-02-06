@@ -5,15 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Edit, Trash2, User } from "lucide-react";
 import EditCustomerModal from "./EditCustomerModal";
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  type: "RETAIL" | "WHOLESALE" | "CORPORATE";
-  address: string;
-}
+import { CustomerListSkeleton } from "./CustomerListSkeleton";
+import { Customer } from "@/types/customer"; // Import the shared Customer type
 
 export default function CustomerList() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
@@ -50,7 +43,7 @@ export default function CustomerList() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <CustomerListSkeleton />;
   }
 
   return (
