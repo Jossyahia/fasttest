@@ -60,9 +60,7 @@ export default function OrderList() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate and refetch orders
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      // Close the modal
       setIsEditModalOpen(false);
       setSelectedOrder(null);
     },
@@ -91,54 +89,82 @@ export default function OrderList() {
     return colors[status];
   };
 
-  // Error handling
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-[400px] text-red-500">
+      <div
+        role="alert"
+        className="flex justify-center items-center min-h-[400px] text-red-500"
+      >
         Failed to load orders: {error.message}
       </div>
     );
   }
 
-  // Loading state
   if (isLoading) {
     return <OrderListSkeleton />;
   }
 
-  // No orders found
   if (!orders || orders.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-[400px] text-gray-500">
+      <div
+        role="status"
+        className="flex justify-center items-center min-h-[400px] text-gray-500"
+      >
         No orders found
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        {/* Desktop View */}
+        <table
+          className="min-w-full divide-y divide-gray-200 hidden md:table"
+          role="table"
+        >
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Order Details
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Customer
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Payment
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Total
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Date
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
@@ -146,7 +172,7 @@ export default function OrderList() {
           <tbody className="bg-white divide-y divide-gray-200">
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <Package className="h-5 w-5 text-gray-400 mr-2" />
                     <span className="font-medium text-gray-900">
@@ -154,12 +180,12 @@ export default function OrderList() {
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {order.customer.name}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
                       order.status
@@ -168,7 +194,7 @@ export default function OrderList() {
                     {order.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 text-xs rounded-full ${getPaymentStatusColor(
                       order.paymentStatus
@@ -177,21 +203,24 @@ export default function OrderList() {
                     {order.paymentStatus}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   ${order.total.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDistanceToNow(new Date(order.createdAt), {
                     addSuffix: true,
                   })}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => {
                       setSelectedOrder(order);
                       setIsDetailsModalOpen(true);
                     }}
                     className="text-blue-600 hover:text-blue-900 mr-4"
+                    aria-label={`View details for order ${
+                      order.orderNumber || order.id
+                    }`}
                   >
                     <Eye className="h-5 w-5" />
                   </button>
@@ -201,6 +230,7 @@ export default function OrderList() {
                       setIsEditModalOpen(true);
                     }}
                     className="text-green-600 hover:text-green-900"
+                    aria-label={`Edit order ${order.orderNumber || order.id}`}
                   >
                     <Edit className="h-5 w-5" />
                   </button>
@@ -209,6 +239,93 @@ export default function OrderList() {
             ))}
           </tbody>
         </table>
+
+        {/* Mobile View */}
+        <div className="md:hidden">
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className="border-b border-gray-200 p-4 space-y-3"
+              role="listitem"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <Package className="h-5 w-5 text-gray-400 mr-2" />
+                  <span className="font-medium text-gray-900">
+                    {order.orderNumber || order.id}
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setIsDetailsModalOpen(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-900 p-2"
+                    aria-label={`View details for order ${
+                      order.orderNumber || order.id
+                    }`}
+                  >
+                    <Eye className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setIsEditModalOpen(true);
+                    }}
+                    className="text-green-600 hover:text-green-900 p-2"
+                    aria-label={`Edit order ${order.orderNumber || order.id}`}
+                  >
+                    <Edit className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Customer</span>
+                  <span className="text-sm font-medium">
+                    {order.customer.name}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Status</span>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                      order.status
+                    )}`}
+                  >
+                    {order.status}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Payment</span>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${getPaymentStatusColor(
+                      order.paymentStatus
+                    )}`}
+                  >
+                    {order.paymentStatus}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Total</span>
+                  <span className="text-sm font-medium">
+                    ${order.total.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Date</span>
+                  <span className="text-sm">
+                    {formatDistanceToNow(new Date(order.createdAt), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {selectedOrder && (

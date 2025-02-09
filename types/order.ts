@@ -13,10 +13,11 @@ export enum PaymentStatus {
 }
 
 export enum PaymentType {
-  CREDIT_CARD = "CREDIT_CARD",
-  PAYPAL = "PAYPAL",
-  CASH_ON_DELIVERY = "CASH_ON_DELIVERY",
+  PREPAID = "PREPAID",
+  PAY_ON_DELIVERY = "PAY_ON_DELIVERY",
+  CREDIT = "CREDIT",
 }
+
 
 export interface OrderItem {
   id: string;
