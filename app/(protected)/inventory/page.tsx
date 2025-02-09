@@ -2,7 +2,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InventoryTable } from "@/components/inventory/inventory-table"; // Make sure this path is correct
+import { InventoryTable } from "@/components/inventory/inventory-table";
+
 
 export default async function InventoryPage() {
    const session = await auth();

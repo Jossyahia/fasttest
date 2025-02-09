@@ -1,4 +1,3 @@
-// app/(protected)/profile/components/SecuritySettings.tsx
 "use client";
 
 import { useState } from "react";
@@ -45,14 +44,18 @@ export function SecuritySettings() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const errorData = await response.json();
+        throw new Error(errorData.message);
       }
 
       toast.success("Password updated successfully");
       reset();
     } catch (error) {
-      toast.error(error.message || "Failed to update password");
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to update password");
+      } else {
+        toast.error("Failed to update password");
+      }
     } finally {
       setIsLoading(false);
     }

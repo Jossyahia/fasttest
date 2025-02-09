@@ -20,13 +20,3 @@ export interface CreateProductInput {
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {}
-
-
-export interface UpdateProductInput {
-  sku?: string;
-  name?: string;
-  description?: string | null;
-  quantity?: number;
-  minStock?: number;
-  location?: string | null;
-}

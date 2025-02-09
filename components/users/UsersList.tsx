@@ -1,7 +1,7 @@
 // components/users/UsersList.tsx
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -9,44 +9,45 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { UserActions } from './UserActions'
-import { UsersListSkeleton } from './UsersListSkeleton'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { UserActions } from "./UserActions";
+import { UsersListSkeleton } from "./UsersListSkeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "@prisma/client";
 
 interface UserWithOrganization extends User {
   organization: {
-    name: string
-  }
+    name: string;
+  };
 }
 
 interface UsersResponse {
-  users: UserWithOrganization[]
+  users: UserWithOrganization[];
 }
 
 const roleColors = {
-  ADMIN: 'bg-red-100 text-red-800',
-  MANAGER: 'bg-blue-100 text-blue-800',
-  STAFF: 'bg-green-100 text-green-800',
-  CUSTOMER: 'bg-gray-100 text-gray-800',
-  PARTNER: 'bg-purple-100 text-purple-800',
-}
+  ADMIN: "bg-red-100 text-red-800",
+  MANAGER: "bg-blue-100 text-blue-800",
+  STAFF: "bg-green-100 text-green-800",
+  CUSTOMER: "bg-gray-100 text-gray-800",
+  PARTNER: "bg-purple-100 text-purple-800",
+};
 
 export function UsersList() {
   const { data, isLoading } = useQuery<UsersResponse>({
-    queryKey: ['users'],
+    queryKey: ["users"],
     queryFn: async () => {
-      const response = await fetch('/api/users')
+      const response = await fetch("/api/users");
       if (!response.ok) {
-        throw new Error('Failed to fetch users')
+        throw new Error("Failed to fetch users");
       }
-      return response.json()
+      return response.json();
     },
-  })
+  });
 
   if (isLoading) {
-    return <UsersListSkeleton />
+    return <UsersListSkeleton />;
   }
 
   return (
@@ -68,7 +69,7 @@ export function UsersList() {
               <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={user.image || ''} alt={user.name || ''} />
+                    <AvatarImage src={user.image || ""} alt={user.name || ""} />
                     <AvatarFallback>
                       {user.name?.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -83,13 +84,11 @@ export function UsersList() {
               </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>
-                <Badge className={roleColors[user.role]}>
-                  {user.role}
-                </Badge>
+                <Badge className={roleColors[user.role]}>{user.role}</Badge>
               </TableCell>
               <TableCell>{user.organization.name}</TableCell>
               <TableCell>
-                <Badge variant={user.emailVerified ? "success" : "warning"}>
+                <Badge variant={user.emailVerified ? "secondary" : "outline"}>
                   {user.emailVerified ? "Verified" : "Pending"}
                 </Badge>
               </TableCell>
@@ -101,5 +100,5 @@ export function UsersList() {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

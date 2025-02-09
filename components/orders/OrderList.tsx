@@ -1,43 +1,21 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Edit, Eye, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import EditOrderModal from "./EditOrderModal";
 import OrderDetailsModal from "./OrderDetailsModal";
 import { OrderListSkeleton } from "./OrderListSkeleton";
-
-interface OrderItem {
-  id: string;
-  productId: string;
-  product: {
-    name: string;
-    sku: string;
-  };
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  customer: {
-    name: string;
-    email: string;
-  };
-  items: OrderItem[];
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
-  paymentStatus: "PENDING" | "PAID" | "FAILED";
-  total: number;
-  createdAt: string;
-}
+import { Order, OrderStatus, PaymentStatus } from "../../types/order";
 
 export default function OrderList() {
+  const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Fetch orders
   const {
     data: orders,
     isLoading,
@@ -51,22 +29,64 @@ export default function OrderList() {
     },
   });
 
-  const getStatusColor = (status: Order["status"]) => {
+  // Order update mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: async (updatedOrder: Order) => {
+      const response = await fetch(`/api/orders/${updatedOrder.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerId: updatedOrder.customer.id,
+          status: updatedOrder.status,
+          paymentStatus: updatedOrder.paymentStatus,
+          paymentType: updatedOrder.paymentType,
+          items: updatedOrder.items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          shippingAddress: updatedOrder.shippingAddress,
+          notes: updatedOrder.notes,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update order");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch orders
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // Close the modal
+      setIsEditModalOpen(false);
+      setSelectedOrder(null);
+    },
+    onError: (error) => {
+      console.error("Order update error:", error);
+    },
+  });
+
+  const getStatusColor = (status: OrderStatus) => {
     const colors = {
-      PENDING: "bg-yellow-100 text-yellow-800",
-      PROCESSING: "bg-blue-100 text-blue-800",
-      SHIPPED: "bg-purple-100 text-purple-800",
-      DELIVERED: "bg-green-100 text-green-800",
-      CANCELLED: "bg-red-100 text-red-800",
+      [OrderStatus.PENDING]: "bg-yellow-100 text-yellow-800",
+      [OrderStatus.PROCESSING]: "bg-blue-100 text-blue-800",
+      [OrderStatus.SHIPPED]: "bg-purple-100 text-purple-800",
+      [OrderStatus.DELIVERED]: "bg-green-100 text-green-800",
+      [OrderStatus.CANCELLED]: "bg-red-100 text-red-800",
     };
     return colors[status];
   };
 
-  const getPaymentStatusColor = (status: Order["paymentStatus"]) => {
+  const getPaymentStatusColor = (status: PaymentStatus) => {
     const colors = {
-      PENDING: "bg-yellow-100 text-yellow-800",
-      PAID: "bg-green-100 text-green-800",
-      FAILED: "bg-red-100 text-red-800",
+      [PaymentStatus.PENDING]: "bg-yellow-100 text-yellow-800",
+      [PaymentStatus.PAID]: "bg-green-100 text-green-800",
+      [PaymentStatus.FAILED]: "bg-red-100 text-red-800",
     };
     return colors[status];
   };
@@ -130,16 +150,13 @@ export default function OrderList() {
                   <div className="flex items-center">
                     <Package className="h-5 w-5 text-gray-400 mr-2" />
                     <span className="font-medium text-gray-900">
-                      {order.orderNumber}
+                      {order.orderNumber || order.id}
                     </span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">
                     {order.customer.name}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {order.customer.email}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -202,6 +219,9 @@ export default function OrderList() {
             onClose={() => {
               setIsEditModalOpen(false);
               setSelectedOrder(null);
+            }}
+            onSave={(updatedOrder) => {
+              updateOrderMutation.mutate(updatedOrder);
             }}
           />
           <OrderDetailsModal

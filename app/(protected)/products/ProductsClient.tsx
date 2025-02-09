@@ -29,12 +29,11 @@ export default function ProductsClient() {
   const [filters, setFilters] = useState<ProductFilters>({});
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { products, isLoading, error, totalPages, refreshProducts } =
+  const { products, isLoading, error, pagination, refreshProducts } =
     useProducts({
       ...filters,
       page: currentPage,
     });
-
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setCurrentPage(1);
     setFilters(newFilters);
@@ -109,7 +108,7 @@ export default function ProductsClient() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         currentPage={currentPage}
-        totalPages={totalPages}
+        totalPages={pagination?.pages || 1}
         onPageChange={handlePageChange}
       />
 

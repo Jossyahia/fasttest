@@ -16,9 +16,11 @@ interface WarehouseMetric {
   movementRate: number;
 }
 
-interface PaymentStat {
+interface GroupedPaymentStats {
   paymentStatus: string;
-  _count: number;
+  _count: {
+    _all: number;
+  };
   _sum: {
     total: number | null;
   };
@@ -32,7 +34,6 @@ interface FormattedPaymentStat {
 
 export async function GET() {
   try {
-    // Get the session
     const session = await auth();
 
     if (!session?.user?.organizationId) {
@@ -44,7 +45,6 @@ export async function GET() {
 
     const organizationId = session.user.organizationId;
 
-    // Initialize empty data structure
     const defaultStats = {
       salesTrend: [],
       paymentStats: [],
@@ -54,55 +54,44 @@ export async function GET() {
       warehouseMetrics: [],
     };
 
-    // Get payment status distribution
-    const paymentStats: PaymentStat[] = await prisma.order.groupBy({
+    // Let Prisma infer the return type, then cast to our custom type.
+    const rawPaymentStats = await prisma.order.groupBy({
       by: ["paymentStatus"],
-      where: {
-        organizationId,
-      },
-      _count: true,
-      _sum: {
-        total: true,
-      },
+      where: { organizationId },
+      _count: { _all: true },
+      _sum: { total: true },
     });
+    const paymentStats = rawPaymentStats as GroupedPaymentStats[];
 
-    // Get warehouse metrics
     const warehouseMetrics: WarehouseWithProducts[] =
       await prisma.warehouse.findMany({
         where: { organizationId },
         select: {
           id: true,
           name: true,
-          products: {
-            select: {
-              quantity: true,
-            },
-          },
+          products: { select: { quantity: true } },
         },
       });
 
-    // Format warehouse data
     const formattedWarehouseMetrics: WarehouseMetric[] = warehouseMetrics.map(
-      (warehouse: WarehouseWithProducts) => ({
+      (warehouse) => ({
         name: warehouse.name,
         totalStock: warehouse.products.reduce(
           (sum, p) => sum + (p.quantity || 0),
           0
         ),
-        movementRate: 0, // Default value for now
+        movementRate: 0,
       })
     );
 
-    // Format payment stats
     const formattedPaymentStats: FormattedPaymentStat[] = paymentStats.map(
-      (stat: PaymentStat) => ({
+      (stat) => ({
         status: stat.paymentStatus,
-        count: stat._count,
+        count: stat._count._all,
         total: stat._sum.total || 0,
       })
     );
 
-    // Return the data
     return NextResponse.json({
       ...defaultStats,
       paymentStats: formattedPaymentStats,

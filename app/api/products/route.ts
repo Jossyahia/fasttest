@@ -13,7 +13,13 @@ const productSchema = z.object({
   quantity: z.number().min(0).default(0),
   minStock: z.number().min(0).default(0),
   warehouseId: z.string().min(1, "Warehouse ID is required"),
-  status: z.enum(["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"]).default("IN_STOCK"),
+  status: z
+    .enum([
+      InventoryStatus.ACTIVE,
+      InventoryStatus.INACTIVE,
+      InventoryStatus.DISCONTINUED,
+    ])
+    .default(InventoryStatus.ACTIVE),
 });
 
 export async function GET(req: NextRequest) {
@@ -59,18 +65,15 @@ export async function GET(req: NextRequest) {
       where.warehouseId = warehouseId;
     }
 
-    // If lowStock is true, only show products where quantity <= minStock
     if (lowStock) {
       where.quantity = {
         lte: prisma.product.fields.minStock,
       };
     }
 
-    // Get total count for pagination
     const total = await prisma.product.count({ where });
     const totalPages = Math.ceil(total / limit);
 
-    // Get products with pagination
     const products = await prisma.product.findMany({
       where,
       skip: (page - 1) * limit,
@@ -114,7 +117,6 @@ export async function POST(req: NextRequest) {
 
     const data = await req.json();
 
-    // Validate input data
     const validationResult = productSchema.safeParse(data);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -123,7 +125,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if warehouse exists and belongs to organization
     const warehouse = await prisma.warehouse.findFirst({
       where: {
         id: data.warehouseId,
@@ -138,7 +139,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for duplicate SKU within the organization
     const existingProduct = await prisma.product.findFirst({
       where: {
         sku: data.sku,
@@ -153,7 +153,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create product
     const product = await prisma.product.create({
       data: {
         ...validationResult.data,
@@ -169,13 +168,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Log activity
     await prisma.activity.create({
       data: {
         action: "PRODUCT_CREATED",
         details: `Product ${product.name} (${product.sku}) created`,
         userId: session.user.id,
-        organizationId: session.user.organizationId,
       },
     });
 
@@ -206,7 +203,6 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Validate input data
     const validationResult = productSchema.partial().safeParse(data);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -215,7 +211,6 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Check if product exists and belongs to organization
     const existingProduct = await prisma.product.findFirst({
       where: {
         id: productId,
@@ -227,7 +222,6 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // If SKU is being changed, check for duplicates
     if (data.sku && data.sku !== existingProduct.sku) {
       const duplicateSku = await prisma.product.findFirst({
         where: {
@@ -245,7 +239,6 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Update product
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: validationResult.data,
@@ -259,13 +252,11 @@ export async function PUT(req: NextRequest) {
       },
     });
 
-    // Log activity
     await prisma.activity.create({
       data: {
         action: "PRODUCT_UPDATED",
         details: `Product ${updatedProduct.name} (${updatedProduct.sku}) updated`,
         userId: session.user.id,
-        organizationId: session.user.organizationId,
       },
     });
 
@@ -296,7 +287,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Check if product exists and belongs to organization
     const product = await prisma.product.findFirst({
       where: {
         id: productId,
@@ -308,18 +298,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Delete product
     await prisma.product.delete({
       where: { id: productId },
     });
 
-    // Log activity
     await prisma.activity.create({
       data: {
         action: "PRODUCT_DELETED",
         details: `Product ${product.name} (${product.sku}) deleted`,
         userId: session.user.id,
-        organizationId: session.user.organizationId,
       },
     });
 

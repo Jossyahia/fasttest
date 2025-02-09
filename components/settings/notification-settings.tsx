@@ -66,6 +66,31 @@ export function NotificationSettings() {
     }
   }
 
+  // Explicitly type the email settings keys as literal types.
+  const emailNotificationSettings: {
+    id:
+      | "email.orderUpdates"
+      | "email.inventory"
+      | "email.security"
+      | "email.marketing";
+    label: string;
+  }[] = [
+    { id: "email.orderUpdates", label: "Order Updates" },
+    { id: "email.inventory", label: "Inventory Alerts" },
+    { id: "email.security", label: "Security Alerts" },
+    { id: "email.marketing", label: "Marketing Updates" },
+  ];
+
+  // Explicitly type the push settings keys as literal types.
+  const pushNotificationSettings: {
+    id: "push.orderUpdates" | "push.inventory" | "push.security";
+    label: string;
+  }[] = [
+    { id: "push.orderUpdates", label: "Order Updates" },
+    { id: "push.inventory", label: "Inventory Alerts" },
+    { id: "push.security", label: "Security Alerts" },
+  ];
+
   return (
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-6">Notification Settings</h2>
@@ -73,18 +98,15 @@ export function NotificationSettings() {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Email Notifications</h3>
           <div className="space-y-4">
-            {[
-              { id: "email.orderUpdates", label: "Order Updates" },
-              { id: "email.inventory", label: "Inventory Alerts" },
-              { id: "email.security", label: "Security Alerts" },
-              { id: "email.marketing", label: "Marketing Updates" },
-            ].map(({ id, label }) => (
+            {emailNotificationSettings.map(({ id, label }) => (
               <div key={id} className="flex items-center justify-between">
                 <label className="text-sm font-medium">{label}</label>
                 <Switch
                   {...form.register(id)}
                   checked={form.watch(id)}
-                  onCheckedChange={(checked) => form.setValue(id, checked)}
+                  onCheckedChange={(checked: boolean) =>
+                    form.setValue(id, checked)
+                  }
                   aria-label={`Toggle ${label}`}
                 />
               </div>
@@ -95,17 +117,15 @@ export function NotificationSettings() {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Push Notifications</h3>
           <div className="space-y-4">
-            {[
-              { id: "push.orderUpdates", label: "Order Updates" },
-              { id: "push.inventory", label: "Inventory Alerts" },
-              { id: "push.security", label: "Security Alerts" },
-            ].map(({ id, label }) => (
+            {pushNotificationSettings.map(({ id, label }) => (
               <div key={id} className="flex items-center justify-between">
                 <label className="text-sm font-medium">{label}</label>
                 <Switch
                   {...form.register(id)}
                   checked={form.watch(id)}
-                  onCheckedChange={(checked) => form.setValue(id, checked)}
+                  onCheckedChange={(checked: boolean) =>
+                    form.setValue(id, checked)
+                  }
                   aria-label={`Toggle ${label}`}
                 />
               </div>

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { InventoryStatus } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
 
-    // Enhanced session and organization ID validation
     if (!session?.user?.organizationId) {
       return NextResponse.json(
         { error: "Unauthorized or missing organization" },
@@ -26,11 +26,11 @@ export async function GET(req: NextRequest) {
       organizationId: session.user.organizationId,
       ...(search && {
         OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { sku: { contains: search, mode: "insensitive" } },
+          { name: { contains: search, mode: "insensitive" as const } },
+          { sku: { contains: search, mode: "insensitive" as const } },
         ],
       }),
-      ...(status && status !== "ALL" && { status }),
+      ...(status && status !== "ALL" && { status: status as InventoryStatus }),
     };
 
     const [products, total] = await Promise.all([

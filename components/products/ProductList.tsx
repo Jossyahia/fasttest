@@ -3,18 +3,13 @@
 import { useCallback, useState, memo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductTable from "./ProductTable";
-import { ProductFilter } from "./ProductFilter";
+import ProductFilter from "./ProductFilter"; // default export
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@prisma/client";
 import { ErrorBoundary } from "react-error-boundary";
+import ProductListSkeleton from "./ProductListSkeleton"; // default export
 
 const MemoizedProductFilter = memo(ProductFilter);
-
-const LoadingFallback = () => (
-  <div className="w-full h-64 flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-  </div>
-);
 
 const ErrorFallback = ({
   error,
@@ -40,7 +35,7 @@ export function ProductList() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, error, mutate } = useProducts({
+  const { products, pagination, isLoading, error, mutate } = useProducts({
     page,
     status: searchParams.get("status"),
     search: searchParams.get("search"),
@@ -81,19 +76,26 @@ export function ProductList() {
   return (
     <div className="space-y-4">
       <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => mutate()}>
-        <Suspense fallback={<LoadingFallback />}>
-          <MemoizedProductFilter />
-          <ProductTable
-            products={data?.products ?? []}
-            isLoading={isLoading}
-            currentPage={page}
-            totalPages={data?.pagination?.pages || 1}
-            onPageChange={handlePageChange}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-          />
+        <Suspense fallback={<ProductListSkeleton />}>
+          {/* Pass a dummy onFilterChange if needed */}
+          <MemoizedProductFilter onFilterChange={() => {}} />
+          {isLoading ? (
+            <ProductListSkeleton />
+          ) : (
+            <ProductTable
+              products={products ?? []}
+              isLoading={isLoading}
+              currentPage={page}
+              totalPages={pagination?.pages || 1}
+              onPageChange={handlePageChange}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
+          )}
         </Suspense>
       </ErrorBoundary>
     </div>
   );
 }
+
+export default ProductList;

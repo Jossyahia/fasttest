@@ -1,143 +1,219 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
-  X,
+  PackageSearch,
   LayoutDashboard,
-  BarChart3,
-  Package,
-  Boxes as BoxesIcon,
-  FolderOpen,
+  Users,
+  Settings,
+  ChevronRight,
+  Menu,
   Store,
   ShoppingCart,
-  RotateCcw,
-  Users,
-  HandShake,
-  Settings,
-  CreditCard,
-  LucideIcon,
+  Users2,
+  Warehouse,
+  LucideIcon, // Import LucideIcon type
+  ChevronDown,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { navigation } from "@/config/navigation";
-import { UserRole } from "@prisma/client";
 
-// Define icons mapping with explicit typing and verified icons
-const Icons: Record<string, LucideIcon> = {
-  dashboard: LayoutDashboard,
-  chart: BarChart3,
-  package: Package,
-  boxes: BoxesIcon,
-  folder: FolderOpen,
-  warehouse: Store,
-  "shopping-cart": ShoppingCart,
-  "rotate-ccw": RotateCcw,
-  users: Users,
-  handshake: HandShake,
-  settings: Settings,
-  "credit-card": CreditCard,
-};
-
-interface NavigationItem {
-  title: string;
+// Define the structure of a navigation item
+interface NavItemType {
   href: string;
-  icon: string;
-  badge?: "new" | "beta";
-  roles?: UserRole[];
-}
-
-interface NavigationSection {
   title: string;
-  items: NavigationItem[];
+  icon: LucideIcon; // Use LucideIcon type instead of any
 }
 
-interface MobileNavProps {
-  show: boolean;
-  onClose: () => void;
+// Define the structure of a navigation group
+interface NavGroupType {
+  title: string;
+  items: NavItemType[];
 }
 
-const MobileNav = ({ show, onClose }: MobileNavProps) => {
-  const { data: session } = useSession();
+// Define the props for the NavItem component
+interface NavItemProps {
+  item: NavItemType;
+  isActive: boolean;
+}
 
-  useEffect(() => {
-    if (show) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+// Define the props for the NavGroup component
+interface NavGroupProps {
+  group: NavGroupType;
+  pathname: string;
+}
 
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [show]);
+// Navigation items data
+const navigationItems: NavGroupType[] = [
+  {
+    title: "Overview",
+    items: [
+      {
+        title: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+      },
+    ],
+  },
+  {
+    title: "Management",
+    items: [
+      {
+        title: "Inventory",
+        href: "/inventory",
+        icon: PackageSearch,
+      },
+      {
+        title: "Products",
+        href: "/products",
+        icon: Store,
+      },
+      {
+        title: "Orders",
+        href: "/orders",
+        icon: ShoppingCart,
+      },
+    ],
+  },
+  {
+    title: "Business",
+    items: [
+      {
+        title: "Customers",
+        href: "/customers",
+        icon: Users2,
+      },
+      {
+        title: "Users",
+        href: "/users",
+        icon: Users,
+      },
+      {
+        title: "Warehouses",
+        href: "/warehouses",
+        icon: Warehouse,
+      },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      {
+        title: "Settings",
+        href: "/settings",
+        icon: Settings,
+      },
+    ],
+  },
+];
 
-  if (!show) return null;
+// NavItem Component
+function NavItem({ item, isActive }: NavItemProps) {
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+        "hover:bg-gray-100 dark:hover:bg-gray-800",
+        isActive
+          ? "bg-gray-100 dark:bg-gray-800 text-primary font-medium"
+          : "text-gray-700 dark:text-gray-300"
+      )}
+    >
+      <item.icon className="w-5 h-5 shrink-0" />
+      <span className="text-sm">{item.title}</span>
+      {isActive && <ChevronRight className="w-4 h-4 ml-auto shrink-0" />}
+    </Link>
+  );
+}
 
-  const renderIcon = (iconName: string) => {
-    const IconComponent = Icons[iconName];
-    if (!IconComponent) {
-      console.warn(`Icon "${iconName}" not found in Icons mapping`);
-      return null;
-    }
-    return <IconComponent className="h-4 w-4" />;
-  };
+// NavGroup Component
+function NavGroup({ group, pathname }: NavGroupProps) {
+  const [isOpen, setIsOpen] = useState(true);
+  const isActiveGroup = group.items.some((item) => pathname === item.href);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-      <div className="fixed inset-y-0 left-0 w-full max-w-xs border-r bg-background p-6 shadow-lg">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Package className="h-6 w-6" />
-            <span className="font-bold">Inventory System</span>
-          </Link>
-          <Button variant="ghost" className="h-8 w-8 p-0" onClick={onClose}>
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+    <div className="space-y-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center w-full gap-2 p-2 text-xs font-medium rounded-lg",
+          "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100",
+          isActiveGroup && "text-gray-900 dark:text-gray-100"
+        )}
+      >
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 transition-transform",
+            isOpen ? "rotate-0" : "-rotate-90"
+          )}
+        />
+        {group.title}
+      </button>
+      {isOpen && (
+        <div className="space-y-1 ml-2">
+          {group.items.map((item) => (
+            <NavItem
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+            />
+          ))}
         </div>
-        <ScrollArea className="my-4 h-[calc(100vh-8rem)] pb-10">
-          <nav className="flex flex-col space-y-2">
-            {navigation.map((section: NavigationSection, index: number) => {
-              const items = section.items.filter(
-                (item) =>
-                  !item.roles ||
-                  (session?.user?.role &&
-                    item.roles.includes(session?.user?.role as UserRole))
-              );
-
-              if (items.length === 0) return null;
-
-              return (
-                <div key={index} className="py-2">
-                  <h4 className="px-2 text-xs font-semibold text-muted-foreground">
-                    {section.title}
-                  </h4>
-                  {items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    >
-                      {renderIcon(item.icon)}
-                      <span>{item.title}</span>
-                      {item.badge && (
-                        <span className="ml-auto text-xs font-medium text-primary">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              );
-            })}
-          </nav>
-        </ScrollArea>
-      </div>
+      )}
     </div>
   );
-};
+}
 
-export default MobileNav;
+// Sidebar Component
+export function Sidebar() {
+  const pathname = usePathname();
+
+  const SidebarContent = () => (
+    <nav className="space-y-6">
+      {navigationItems.map((group) => (
+        <NavGroup key={group.title} group={group} pathname={pathname} />
+      ))}
+    </nav>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 border-r bg-white dark:bg-gray-950 min-h-screen p-4">
+        <div className="mb-6 px-3">
+          <h2 className="text-lg font-semibold">FastIv Pro</h2>
+        </div>
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden fixed top-4 left-4 z-40"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-4">
+          <SheetHeader className="mb-6">
+            <SheetTitle>FastIv Pro</SheetTitle>
+          </SheetHeader>
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}

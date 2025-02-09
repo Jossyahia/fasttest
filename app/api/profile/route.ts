@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+//import { Prisma } from "@prisma/client";
 
-interface OrganizationSettings {
-  id?: string;
-  organizationId: string;
-  lowStockThreshold: number;
-  currency: string;
-  notificationEmail: string | null;
-  metadata?: Record<string, unknown>;
-}
+// Update the interface to match Prisma's JsonValue type
+// interface OrganizationSettings {
+//   id?: string;
+//   organizationId: string;
+//   lowStockThreshold: number;
+//   currency: string;
+//   notificationEmail: string | null;
+//   metadata?: Prisma.JsonValue; // Changed from Record<string, unknown>
+// }
 
 export async function GET() {
   try {
@@ -69,7 +71,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const updatedSettings: OrganizationSettings = await prisma.settings.upsert({
+    const updatedSettings = await prisma.settings.upsert({
       where: { organizationId: user.organization.id },
       update: { lowStockThreshold, currency, notificationEmail, metadata },
       create: {

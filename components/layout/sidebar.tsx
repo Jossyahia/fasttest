@@ -16,6 +16,7 @@ import {
   Users2,
   Warehouse,
   ChevronDown,
+  LucideIcon,
 } from "lucide-react";
 import {
   Sheet,
@@ -26,7 +27,33 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
-const navigationItems = [
+// Define the structure of a navigation item
+interface NavItemType {
+  href: string;
+  title: string;
+  icon: LucideIcon; // Updated to use LucideIcon type
+}
+
+// Define the structure of a navigation group
+interface NavGroupType {
+  title: string;
+  items: NavItemType[];
+}
+
+// Define the props for the NavItem component
+interface NavItemProps {
+  item: NavItemType;
+  isActive: boolean;
+}
+
+// Define the props for the NavGroup component
+interface NavGroupProps {
+  group: NavGroupType;
+  pathname: string;
+}
+
+// Navigation items data
+const navigationItems: NavGroupType[] = [
   {
     title: "Overview",
     items: [
@@ -89,7 +116,8 @@ const navigationItems = [
   },
 ];
 
-function NavItem({ item, isActive }) {
+// NavItem Component
+function NavItem({ item, isActive }: NavItemProps) {
   return (
     <Link
       href={item.href}
@@ -108,7 +136,8 @@ function NavItem({ item, isActive }) {
   );
 }
 
-function NavGroup({ group, pathname }) {
+// NavGroup Component
+function NavGroup({ group, pathname }: NavGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
   const isActiveGroup = group.items.some((item) => pathname === item.href);
 
@@ -145,6 +174,7 @@ function NavGroup({ group, pathname }) {
   );
 }
 
+// Sidebar Component
 export function Sidebar() {
   const pathname = usePathname();
 

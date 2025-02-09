@@ -1,4 +1,3 @@
-// app/(protected)/profile/components/NotificationPreferences.tsx
 "use client";
 
 import { useState } from "react";
@@ -98,7 +97,7 @@ export function NotificationPreferences() {
               </div>
               <Switch
                 checked={watch(id as keyof NotificationPreferencesData)}
-                onCheckedChange={(checked) =>
+                onCheckedChange={(checked: boolean) =>
                   setValue(id as keyof NotificationPreferencesData, checked)
                 }
               />

@@ -1,3 +1,4 @@
+// inventory-table.tsx
 "use client";
 
 import { useState } from "react";
@@ -53,9 +54,7 @@ interface Product {
   location: string | null;
   createdAt: string;
   updatedAt: string;
-  warehouse?: {
-    name: string;
-  } | null;
+  warehouse?: { name: string };
 }
 
 interface PaginationData {
@@ -73,6 +72,10 @@ type EditProductFormData = {
   location?: string;
   warehouse?: string;
 };
+
+interface DeleteProduct extends Omit<Product, "warehouse"> {
+  warehouse?: string | null;
+}
 
 export function InventoryTable() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -92,16 +95,13 @@ export function InventoryTable() {
         page: page.toString(),
         limit: limit.toString(),
       });
-
       if (search) searchParams.append("search", search);
       if (status && status !== "all") searchParams.append("status", status);
-
       const response = await fetch(`/api/inventory?${searchParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch inventory");
       }
-
       const data = await response.json();
       return data as { products: Product[]; pagination: PaginationData };
     },
@@ -113,8 +113,8 @@ export function InventoryTable() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete product");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete product");
       }
       return response.json();
     },
@@ -138,8 +138,8 @@ export function InventoryTable() {
         body: JSON.stringify(updatedProduct),
       });
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update product");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update product");
       }
       return response.json();
     },
@@ -169,14 +169,24 @@ export function InventoryTable() {
   };
 
   const handleSubmitEdit = async (formData: EditProductFormData) => {
-    if (selectedProduct) {
-      const updatedProduct: Product = {
-        ...selectedProduct,
-        ...formData,
-        warehouse: formData.warehouse ? { name: formData.warehouse } : null,
-      };
-      editMutation.mutate(updatedProduct);
-    }
+    if (!selectedProduct) return;
+
+    const warehouseObj = formData.warehouse
+      ? { name: formData.warehouse }
+      : selectedProduct.warehouse;
+
+    const updatedProduct: Product = {
+      ...selectedProduct,
+      ...formData,
+      warehouse: warehouseObj,
+    };
+    editMutation.mutate(updatedProduct);
+  };
+
+  const getRowClassName = (product: Product): string => {
+    if (product.quantity <= 0) return "bg-red-50/50";
+    if (product.quantity <= product.minStock) return "bg-yellow-50/50";
+    return "";
   };
 
   if (isLoading) {
@@ -199,6 +209,15 @@ export function InventoryTable() {
       </Card>
     );
   }
+
+  const productForDeletion: DeleteProduct | null = selectedProduct
+    ? {
+        ...selectedProduct,
+        warehouse: selectedProduct.warehouse
+          ? selectedProduct.warehouse.name
+          : null,
+      }
+    : null;
 
   return (
     <div className="space-y-4">
@@ -234,7 +253,6 @@ export function InventoryTable() {
               </SelectContent>
             </Select>
           </div>
-
           <Table>
             <TableHeader>
               <TableRow>
@@ -250,13 +268,7 @@ export function InventoryTable() {
               {data?.products.map((product) => (
                 <TableRow
                   key={product.id}
-                  className={cn(
-                    "transition-colors",
-                    product.quantity <= 0 && "bg-red-50/50",
-                    product.quantity <= product.minStock &&
-                      product.quantity > 0 &&
-                      "bg-yellow-50/50"
-                  )}
+                  className={cn("transition-colors", getRowClassName(product))}
                 >
                   <TableCell className="font-medium">{product.sku}</TableCell>
                   <TableCell>{product.name}</TableCell>
@@ -323,29 +335,26 @@ export function InventoryTable() {
           </Table>
         </CardContent>
       </Card>
-
       <ProductDetailsDialog
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         product={selectedProduct}
       />
-
       <EditProductDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         product={selectedProduct}
         onSubmit={handleSubmitEdit}
-        isLoading={editMutation.isPending}
+        isLoading={editMutation.status === "pending"}
       />
-
       <DeleteProductDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        product={selectedProduct}
+        product={productForDeletion}
         onDelete={() =>
           selectedProduct && deleteMutation.mutate(selectedProduct.id)
         }
-        isLoading={deleteMutation.isPending}
+        isLoading={deleteMutation.status === "pending"}
       />
     </div>
   );

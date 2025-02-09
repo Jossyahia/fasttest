@@ -23,6 +23,7 @@ export default function WarehouseDetail() {
 
   if (isLoading) return <p className="p-4">Loading...</p>;
   if (error) return <p className="p-4 text-red-500">Error loading warehouse</p>;
+  if (!warehouse) return <p className="p-4">Warehouse not found</p>;
 
   return (
     <div className="p-4">

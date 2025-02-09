@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "react-hot-toast";
 
+// Define your organization schema.
 const organizationSchema = z.object({
   name: z
     .string()
@@ -36,7 +37,22 @@ const organizationSchema = z.object({
 
 type OrganizationFormValues = z.infer<typeof organizationSchema>;
 
-// Use named export instead of default export
+// Define a union type for the address field paths.
+type AddressFieldPath = `address.${keyof OrganizationFormValues["address"]}`;
+
+// Explicitly type the mapping array for address fields.
+const addressFields: {
+  name: keyof OrganizationFormValues["address"];
+  label: string;
+}[] = [
+  { name: "street", label: "Street" },
+  { name: "city", label: "City" },
+  { name: "state", label: "State" },
+  { name: "zipCode", label: "ZIP Code" },
+  { name: "country", label: "Country" },
+];
+
+// Use named export instead of default export.
 export function OrganizationSettings() {
   const {
     register,
@@ -134,18 +150,12 @@ export function OrganizationSettings() {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Address *</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: "street", label: "Street" },
-              { name: "city", label: "City" },
-              { name: "state", label: "State" },
-              { name: "zipCode", label: "ZIP Code" },
-              { name: "country", label: "Country" },
-            ].map(({ name, label }) => (
+            {addressFields.map(({ name, label }) => (
               <div key={name}>
                 <label className="block text-sm font-medium mb-1">
                   {label}
                 </label>
-                <Input {...register(`address.${name}`)} />
+                <Input {...register(`address.${name}` as AddressFieldPath)} />
                 {errors.address?.[name] && (
                   <p className="text-sm text-red-500 mt-1">
                     {errors.address?.[name]?.message}

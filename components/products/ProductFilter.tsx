@@ -1,8 +1,7 @@
-// components/ProductFilter.tsx
 import { useState, useEffect } from "react";
 import { InventoryStatus } from "@prisma/client";
 import { Search, X } from "lucide-react";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce"; // Correct way to import debounce
 
 interface Warehouse {
   id: string;
@@ -150,7 +149,6 @@ export default function ProductFilter({ onFilterChange }: ProductFiltersProps) {
           <option value="">All Warehouses</option>
           {!isLoading &&
             !error &&
-            warehouses &&
             warehouses.map((warehouse) => (
               <option key={warehouse.id} value={warehouse.id}>
                 {warehouse.name}

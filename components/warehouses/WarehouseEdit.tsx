@@ -1,37 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Warehouse } from "@prisma/client";
+
+interface WarehouseUpdatePayload {
+  name: string;
+  location: string;
+}
 
 export default function WarehouseEdit() {
   const { id } = useParams();
   const router = useRouter();
 
-  const { data: warehouse, isLoading } = useQuery({
+  const { data: warehouse, isLoading } = useQuery<Warehouse>({
     queryKey: ["warehouse", id],
     queryFn: () => fetch(`/api/warehouses/${id}`).then((res) => res.json()),
   });
 
-  const [name, setName] = useState(warehouse?.name || "");
-  const [location, setLocation] = useState(warehouse?.location || "");
+  const [name, setName] = useState("");
+  const [location, setLocation] = useState("");
 
-  const mutation = useMutation({
-    mutationFn: (updatedWarehouse) =>
-      fetch(`/api/warehouses/${id}`, {
+  useEffect(() => {
+    if (warehouse) {
+      setName(warehouse.name);
+      setLocation(warehouse.location ?? "");
+    }
+  }, [warehouse]);
+
+  const mutation = useMutation<Warehouse, Error, WarehouseUpdatePayload>({
+    mutationFn: async (updatedWarehouse: WarehouseUpdatePayload) => {
+      const response = await fetch(`/api/warehouses/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedWarehouse),
-      }),
+      });
+      if (!response.ok) {
+        throw new Error("Error updating warehouse");
+      }
+      return response.json();
+    },
     onSuccess: () => router.push("/warehouses"),
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     mutation.mutate({ name, location });
   };
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <p className="p-4">Loading...</p>;
 
   return (
     <form onSubmit={handleSubmit} className="p-4 space-y-4">

@@ -106,7 +106,13 @@ const productSchema = z.object({
 });
 
 // Components
-const StatusBadge = ({ quantity, minStock }: { quantity: number; minStock: number }) => {
+const StatusBadge = ({
+  quantity,
+  minStock,
+}: {
+  quantity: number;
+  minStock: number;
+}) => {
   const getStatusConfig = (quantity: number, minStock: number) => {
     if (quantity <= 0) {
       return {
@@ -135,7 +141,13 @@ const StatusBadge = ({ quantity, minStock }: { quantity: number; minStock: numbe
   );
 };
 
-const QuantityIndicator = ({ quantity, minStock }: { quantity: number; minStock: number }) => {
+const QuantityIndicator = ({
+  quantity,
+  minStock,
+}: {
+  quantity: number;
+  minStock: number;
+}) => {
   const getQuantityColor = (quantity: number, minStock: number) => {
     if (quantity <= 0) return "text-red-600";
     if (quantity <= minStock) return "text-yellow-600";
@@ -156,9 +168,7 @@ const LocationBadge = ({ location }: { location: string | null }) => {
   return (
     <div className="flex items-center gap-2">
       <Warehouse className="h-4 w-4 text-gray-400" />
-      <span className="text-sm text-gray-600">
-        {location || "No location"}
-      </span>
+      <span className="text-sm text-gray-600">{location || "No location"}</span>
     </div>
   );
 };
@@ -591,10 +601,10 @@ const InventoryList = () => {
                   key={product.id}
                   className={cn(
                     "transition-colors",
-                    product.quantity <= 0 && "bg-red-50/50",
-                    product.quantity <= product.minStock &&
-                      product.quantity > 0 &&
-                      "bg-yellow-50/50"
+                    product.quantity <= 0 ? "bg-red-50/50" : "",
+                    product.quantity <= product.minStock && product.quantity > 0
+                      ? "bg-yellow-50/50"
+                      : ""
                   )}
                 >
                   <TableCell className="font-medium">{product.sku}</TableCell>
@@ -705,4 +715,3 @@ const InventoryList = () => {
 };
 
 export default InventoryList;
-    

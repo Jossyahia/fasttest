@@ -1,4 +1,3 @@
-// components/orders/EditOrderModal.tsx
 "use client";
 
 import { useState } from "react";
@@ -6,28 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
-
-export enum OrderStatus {
-  PENDING = "PENDING",
-  PROCESSING = "PROCESSING",
-  SHIPPED = "SHIPPED",
-  DELIVERED = "DELIVERED",
-  CANCELLED = "CANCELLED",
-}
-
-export enum PaymentStatus {
-  PENDING = "PENDING",
-  PAID = "PAID",
-  PARTIALLY_PAID = "PARTIALLY_PAID",
-  REFUNDED = "REFUNDED",
-  FAILED = "FAILED",
-}
-
-export enum PaymentType {
-  PREPAID = "PREPAID",
-  PAY_ON_DELIVERY = "PAY_ON_DELIVERY",
-  CREDIT = "CREDIT",
-}
+import { Order, OrderStatus, PaymentStatus } from "../../types/order"; // Import the Order type
 
 const orderSchema = z.object({
   status: z.nativeEnum(OrderStatus),
@@ -36,42 +14,28 @@ const orderSchema = z.object({
 
 type OrderFormData = z.infer<typeof orderSchema>;
 
-interface OrderItem {
-  id: string;
-  quantity: number;
-  price: number;
-  product: {
-    id: string;
-    name: string;
-  };
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  status: OrderStatus;
-  paymentStatus: PaymentStatus;
-  paymentType: PaymentType;
-  total: number;
-  items: OrderItem[];
-  customer: {
-    id: string;
-    name: string;
-  };
-  shippingAddress?: string;
-  notes?: string;
-}
+// interface OrderItem {
+//   id: string;
+//   quantity: number;
+//   price: number;
+//   product: {
+//     id: string;
+//     name: string;
+//   };
+// }
 
 interface EditOrderModalProps {
   order: Order;
   isOpen: boolean;
   onClose: () => void;
+  onSave: (updatedOrder: Order) => void;
 }
 
 export default function EditOrderModal({
   order,
   isOpen,
   onClose,
+  onSave,
 }: EditOrderModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,9 +53,6 @@ export default function EditOrderModal({
     },
   });
 
-  // components/orders/EditOrderModal.tsx
-
-  // components/orders/EditOrderModal.tsx
   const onSubmit = async (data: OrderFormData) => {
     setIsSubmitting(true);
     setError(null);
@@ -99,7 +60,6 @@ export default function EditOrderModal({
     try {
       const requestBody = {
         customerId: order.customer.id,
-        paymentType: order.paymentType,
         items: order.items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -111,12 +71,6 @@ export default function EditOrderModal({
         paymentStatus: data.paymentStatus,
       };
 
-      // Debug log
-      console.log(
-        "Sending request body:",
-        JSON.stringify(requestBody, null, 2)
-      );
-
       const response = await fetch(`/api/orders/${order.id}`, {
         method: "PUT",
         headers: {
@@ -127,12 +81,20 @@ export default function EditOrderModal({
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Response error:", errorData);
         throw new Error(errorData.error || "Failed to update order");
       }
 
       const responseData = await response.json();
-      console.log("Response data:", responseData);
+
+      // Ensure the response includes all required properties
+      const completeOrder = {
+        ...responseData,
+        paymentType: responseData.paymentType || "PREPAID",
+        createdAt: responseData.createdAt || new Date().toISOString(),
+      };
+
+      // Call the onSave prop with the complete order data
+      onSave(completeOrder);
 
       await queryClient.invalidateQueries({ queryKey: ["orders"] });
       onClose();
@@ -177,7 +139,6 @@ export default function EditOrderModal({
             <p>Customer: {order.customer.name}</p>
             <p>Total: ${order.total.toFixed(2)}</p>
             <p>Items: {order.items.length}</p>
-            <p>Payment Type: {order.paymentType.replace(/_/g, " ")}</p>
           </div>
         </div>
 

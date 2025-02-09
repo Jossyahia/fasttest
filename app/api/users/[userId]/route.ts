@@ -1,6 +1,85 @@
 import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { UserRole } from "@prisma/client";
+
+// Define allowed roles
+const allowedRoles: UserRole[] = [
+  "ADMIN",
+  "MANAGER",
+  "STAFF",
+  "CUSTOMER",
+  "PARTNER",
+];
+
+interface UpdateUserRequest {
+  name?: string;
+  role?: UserRole;
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+): Promise<Response> {
+  try {
+    const { userId } = await params;
+    const session = await auth();
+
+    if (!session?.user?.organizationId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
+    }
+
+    // Parse and validate request body
+    const body: UpdateUserRequest = await request.json();
+    const { name, role } = body;
+
+    if (!name || !role) {
+      return new Response(
+        JSON.stringify({ error: "Name and role are required" }),
+        { status: 400 }
+      );
+    }
+
+    // Validate role if provided
+    if (role && !allowedRoles.includes(role)) {
+      return new Response(JSON.stringify({ error: "Invalid role specified" }), {
+        status: 400,
+      });
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: session.user.organizationId,
+      },
+    });
+
+    if (!existingUser) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { name, role },
+    });
+
+    return new Response(JSON.stringify(updatedUser), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    console.error("[USER_UPDATE]", error);
+    return new Response(JSON.stringify({ error: "Internal Error" }), {
+      status: 500,
+    });
+  }
+}
 
 export async function DELETE(
   _req: NextRequest,
@@ -36,62 +115,6 @@ export async function DELETE(
     );
   } catch (error) {
     console.error("[USER_DELETE]", error);
-    return new Response(JSON.stringify({ error: "Internal Error" }), {
-      status: 500,
-    });
-  }
-}
-
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-): Promise<Response> {
-  try {
-    const { userId } = await params;
-    const session = await auth();
-
-    if (!session?.user?.organizationId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
-    const body = await req.json();
-    if (!body || typeof body !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid request body" }), {
-        status: 400,
-      });
-    }
-
-    const { name, role } = body as { name?: string; role?: string };
-    if (!name || !role) {
-      return new Response(
-        JSON.stringify({ error: "Name and role are required" }),
-        { status: 400 }
-      );
-    }
-
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        organizationId: session.user.organizationId,
-      },
-    });
-
-    if (!existingUser) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { name, role },
-    });
-
-    return new Response(JSON.stringify(updatedUser));
-  } catch (error) {
-    console.error("[USER_UPDATE]", error);
     return new Response(JSON.stringify({ error: "Internal Error" }), {
       status: 500,
     });
