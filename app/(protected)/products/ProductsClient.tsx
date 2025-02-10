@@ -6,7 +6,7 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { Prisma } from "@prisma/client";
+import { Prisma, InventoryStatus } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
@@ -14,16 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+type Product = Prisma.ProductGetPayload<{}>;
+
 interface ProductFilters {
   search?: string;
-  status?: Prisma.InventoryStatus;
+  status?: InventoryStatus;
   warehouseId?: string;
   lowStock?: boolean;
   page?: number;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-type Product = Prisma.ProductGetPayload<{}>;
 
 export default function ProductsClient() {
   const [currentPage, setCurrentPage] = useState(1);
