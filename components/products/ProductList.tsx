@@ -1,4 +1,3 @@
-// components/ProductList.tsx
 "use client";
 
 import { useCallback, useState, memo, Suspense } from "react";
@@ -6,19 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ProductTable from "./ProductTable";
 import ProductFilter from "./ProductFilter";
 import { useProducts } from "@/hooks/useProducts";
-import { Product, InventoryStatus } from "@prisma/client";
+import { type Product } from "@/types/product";
+import { type InventoryStatus } from "@prisma/client";
 import { ErrorBoundary } from "react-error-boundary";
 import ProductListSkeleton from "./ProductListSkeleton";
 
 const MemoizedProductFilter = memo(ProductFilter);
 
-const ErrorFallback = ({
-  error,
-  resetErrorBoundary,
-}: {
+interface ErrorFallbackProps {
   error: Error;
   resetErrorBoundary: () => void;
-}) => (
+}
+
+const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => (
   <div className="p-4 border border-red-200 rounded-md bg-red-50">
     <h2 className="text-red-800 font-semibold">Something went wrong:</h2>
     <p className="text-red-600">{error.message}</p>

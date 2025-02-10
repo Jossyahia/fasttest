@@ -1,10 +1,18 @@
-import React from "react";
-import { AlertTriangle } from "lucide-react";
-import { Product as PrismaProduct } from "@prisma/client";
+// components/products/ProductTable.tsx
+"use client";
 
-interface Product extends PrismaProduct {
-  minStock: number;
-}
+import { type Product } from "@/types/product";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductTableProps {
   products: Product[];
@@ -16,7 +24,16 @@ interface ProductTableProps {
   onEdit: (product: Product) => void;
 }
 
-const ProductTable: React.FC<ProductTableProps> = ({
+const getStatusStyle = (status: Product["status"]) => {
+  const styles = {
+    ACTIVE: "bg-green-100 text-green-800",
+    INACTIVE: "bg-yellow-100 text-yellow-800",
+    DISCONTINUED: "bg-red-100 text-red-800",
+  };
+  return styles[status] || "";
+};
+
+export default function ProductTable({
   products,
   isLoading,
   currentPage,
@@ -24,7 +41,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
   onPageChange,
   onDelete,
   onEdit,
-}) => {
+}: ProductTableProps) {
   if (isLoading) {
     return (
       <div className="w-full p-4 flex justify-center">
@@ -42,102 +59,82 @@ const ProductTable: React.FC<ProductTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              SKU
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Stock
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>SKU</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Stock</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {products.map((product) => (
-            <tr key={product.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{product.name}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">{product.sku}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${
-                    product.status === "ACTIVE"
-                      ? "bg-green-100 text-green-800"
-                      : product.status === "INACTIVE"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
+            <TableRow key={product.id}>
+              <TableCell className="font-medium">{product.name}</TableCell>
+              <TableCell className="text-gray-500">{product.sku}</TableCell>
+              <TableCell>
+                <Badge
+                  variant="secondary"
+                  className={getStatusStyle(product.status)}
                 >
                   {product.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center text-sm text-gray-500">
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
                   <span>{product.quantity}</span>
-                  {product.quantity < product.minStock && (
+                  {product.minStock && product.quantity < product.minStock && (
                     <AlertTriangle
-                      className="h-4 w-4 ml-2 text-amber-500"
+                      className="h-4 w-4 text-amber-500"
                       aria-label="Low Stock"
                     />
                   )}
                 </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button
-                  onClick={() => onEdit(product)}
-                  className="text-indigo-600 hover:text-indigo-900"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(product.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(product)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(product.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-      <div className="px-6 py-4 border-t border-gray-200 bg-white">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-            className="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </div>
+        </TableBody>
+      </Table>
+      <div className="flex items-center justify-between px-4 py-4 border-t">
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+        >
+          Previous
+        </Button>
+        <span className="text-sm text-gray-700">
+          Page {currentPage} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+        >
+          Next
+        </Button>
       </div>
     </div>
   );
-};
-
-export default ProductTable;
+}

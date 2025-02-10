@@ -1,3 +1,4 @@
+// app/(protected)/products/ProductsClient.tsx
 "use client";
 import { useState, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
@@ -13,20 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-interface Product {
-  id: string;
-  status: InventoryStatus;
-  // ... other product fields
-}
-
-interface ProductFilters {
-  search?: string;
-  status?: InventoryStatus;
-  warehouseId?: string;
-  lowStock?: boolean;
-  page?: number;
-}
+import { type Product, type ProductFilters } from "@/types/product";
 
 export default function ProductsClient() {
   const [currentPage, setCurrentPage] = useState(1);
