@@ -70,7 +70,6 @@ export async function GET(req: NextRequest) {
         lte: prisma.product.fields.minStock,
       };
     }
-
     const total = await prisma.product.count({ where });
     const totalPages = Math.ceil(total / limit);
 

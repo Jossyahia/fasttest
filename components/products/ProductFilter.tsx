@@ -63,6 +63,13 @@ export default function ProductFilter({ onFilterChange }: ProductFiltersProps) {
     });
   }, 300);
 
+  // Cleanup debounced function on component unmount
+useEffect(() => {
+  return () => {
+    debouncedSearch.cancel();
+  };
+}, [debouncedSearch]);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     debouncedSearch(e.target.value);
@@ -133,7 +140,7 @@ export default function ProductFilter({ onFilterChange }: ProductFiltersProps) {
           className="rounded-md border border-gray-300 px-3 py-2"
         >
           <option value="">All Statuses</option>
-          {Object.values(InventoryStatus).map((s) => (
+          {InventoryStatus && Object.values(InventoryStatus).map((s) => (
             <option key={s} value={s}>
               {s}
             </option>

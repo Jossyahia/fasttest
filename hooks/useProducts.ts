@@ -1,51 +1,46 @@
+// hooks/useProducts.ts
 import useSWR from "swr";
-import { InventoryStatus } from "@prisma/client";
+import { Product, InventoryStatus } from "@prisma/client";
 
-export interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  description: string | null;
-  status: InventoryStatus; // Ensure correct type
-  quantity: number;
-  minStock: number;
-  location: string | null;
-  warehouseId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  organizationId: string;
-}
-
-interface Pagination {
-  pages: number;
-  total: number;
-}
-
-interface UseProductsReturn {
+interface ProductsResponse {
   products: Product[];
-  pagination: Pagination;
-  isLoading: boolean;
-  error: any;
-  refreshProducts: () => void;
-  mutate: () => void; // Ensure mutate is included
+  pagination: {
+    total: number;
+    pages: number;
+    currentPage: number;
+    perPage: number;
+  };
 }
 
-export function useProducts(params: Record<string, any>): UseProductsReturn {
-  const { data, error, mutate } = useSWR(
-    `/api/products?${new URLSearchParams(params)}`
+interface ProductFilters {
+  page: number;
+  status?: InventoryStatus | undefined;
+  search?: string | undefined;
+  warehouseId?: string | undefined;
+  lowStock?: boolean;
+}
+
+
+
+
+export function useProducts(filters: ProductFilters) {
+  const queryParams = new URLSearchParams({
+    page: String(filters.page || 1),
+    ...(filters.status && { status: filters.status }),
+    ...(filters.search && { search: filters.search }),
+    ...(filters.warehouseId && { warehouseId: filters.warehouseId }),
+    ...(filters.lowStock && { lowStock: String(filters.lowStock) }),
+  }).toString();
+
+  const { data, error, mutate } = useSWR<ProductsResponse>(
+    `/api/products?${queryParams}`
   );
 
   return {
-    products: (data?.products ?? []).map((product: any) => ({
-      ...product,
-      status: product.status as InventoryStatus, // Cast status
-      createdAt: new Date(product.createdAt), // Convert string to Date
-      updatedAt: new Date(product.updatedAt),
-    })) as Product[],
-    pagination: data?.pagination ?? { pages: 1, total: 0 },
-    isLoading: !data && !error,
+    products: data?.products,
+    pagination: data?.pagination,
+    isLoading: !error && !data,
     error,
-    refreshProducts: mutate, // Ensure mutate is exposed
-    mutate, // Include mutate in return
+    mutate,
   };
 }

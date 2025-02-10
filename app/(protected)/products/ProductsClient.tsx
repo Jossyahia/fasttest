@@ -1,3 +1,4 @@
+// app/(protected)/products/ProductsClient.tsx
 "use client";
 
 import { useState, useCallback } from "react";
@@ -29,11 +30,11 @@ export default function ProductsClient() {
   const [filters, setFilters] = useState<ProductFilters>({});
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { products, isLoading, error, pagination, refreshProducts } =
-    useProducts({
-      ...filters,
-      page: currentPage,
-    });
+  const { products, isLoading, error, pagination, mutate } = useProducts({
+    ...filters,
+    page: currentPage,
+  });
+
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setCurrentPage(1);
     setFilters(newFilters);
@@ -67,18 +68,18 @@ export default function ProductsClient() {
           throw new Error(data.error || "Failed to delete product");
         }
 
-        refreshProducts();
+        mutate(); // Changed from refreshProducts to mutate
       } catch (error) {
         console.error("Error deleting product:", error);
       }
     },
-    [refreshProducts]
+    [mutate] // Update dependency
   );
 
   const handleProductCreated = useCallback(() => {
     setIsCreateModalOpen(false);
-    refreshProducts();
-  }, [refreshProducts]);
+    mutate(); // Changed from refreshProducts to mutate
+  }, [mutate]); // Update dependency
 
   return (
     <>
@@ -126,7 +127,11 @@ export default function ProductsClient() {
 
       <Dialog
         open={editingProduct !== null}
-        onOpenChange={(open) => !open && setEditingProduct(null)}
+        onOpenChange={(open: boolean) => {
+          if (!open) {
+            setEditingProduct(null);
+          }
+        }}
       >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -137,7 +142,7 @@ export default function ProductsClient() {
               product={editingProduct}
               onSuccess={() => {
                 setEditingProduct(null);
-                refreshProducts();
+                mutate(); // Changed from refreshProducts to mutate
               }}
               onCancel={() => setEditingProduct(null)}
             />
