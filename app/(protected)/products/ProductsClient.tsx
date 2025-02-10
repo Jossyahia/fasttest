@@ -6,7 +6,6 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { Prisma } from "@prisma/client"; // ✅ Corrected Import
 import {
   Dialog,
   DialogContent,
@@ -14,9 +13,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Define the InventoryStatus enum explicitly
+export enum InventoryStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  OUT_OF_STOCK = "OUT_OF_STOCK",
+}
+
+// Define the Product type
+interface Product {
+  id: string;
+  name: string;
+  status: InventoryStatus;
+  warehouseId?: string;
+  stock?: number;
+  // Add other product fields as needed
+}
+
 interface ProductFilters {
   search?: string;
-  status?: Prisma.InventoryStatus; // ✅ Corrected Reference
+  status?: InventoryStatus;
   warehouseId?: string;
   lowStock?: boolean;
   page?: number;
@@ -26,7 +42,7 @@ export default function ProductsClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filters, setFilters] = useState<ProductFilters>({
-    status: Prisma.InventoryStatus.ACTIVE, // ✅ Proper usage
+    status: InventoryStatus.ACTIVE,
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
