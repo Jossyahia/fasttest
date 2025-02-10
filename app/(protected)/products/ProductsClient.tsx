@@ -6,28 +6,20 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-// Define the InventoryStatus enum explicitly
+// Define the InventoryStatus enum if it's not available from Prisma
 export enum InventoryStatus {
-  ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  OUT_OF_STOCK = "OUT_OF_STOCK",
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  OUT_OF_STOCK = 'OUT_OF_STOCK'
 }
 
-// Define the Product type
+// Update the Product type to use the correct status type
 interface Product {
   id: string;
-  name: string;
   status: InventoryStatus;
-  warehouseId?: string;
-  stock?: number;
-  // Add other product fields as needed
+  // ... other product fields
 }
 
 interface ProductFilters {
