@@ -1,6 +1,5 @@
 // app/(protected)/products/ProductsClient.tsx
 "use client";
-import { Prisma } from "@prisma/client";
 import { useState, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import ProductFilter from "@/components/products/ProductFilter";

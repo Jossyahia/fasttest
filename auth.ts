@@ -1,5 +1,4 @@
 // authgood.ts
-export const runtime = "nodejs";
 
 import NextAuth, { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
@@ -8,6 +7,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+
+export const runtime = "nodejs";
 
 interface CredentialsType {
   email: string;
