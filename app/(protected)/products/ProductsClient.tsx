@@ -6,7 +6,7 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { Prisma } from "@prisma/client"; // Correctly importing Prisma
+import { Prisma } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
@@ -16,13 +16,13 @@ import {
 
 interface ProductFilters {
   search?: string;
-  status?: Prisma.InventoryStatus; // Ensure proper typing
+  status?: Prisma.InventoryStatus;
   warehouseId?: string;
   lowStock?: boolean;
   page?: number;
 }
 
-// Correcting Product type
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type Product = Prisma.ProductGetPayload<{}>;
 
 export default function ProductsClient() {
@@ -57,9 +57,7 @@ export default function ProductsClient() {
       try {
         const response = await fetch(`/api/products/${id}`, {
           method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         });
         const data = await response.json();
         if (!response.ok) {
@@ -125,9 +123,7 @@ export default function ProductsClient() {
       <Dialog
         open={editingProduct !== null}
         onOpenChange={(open: boolean) => {
-          if (!open) {
-            setEditingProduct(null);
-          }
+          if (!open) setEditingProduct(null);
         }}
       >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
