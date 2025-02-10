@@ -1,4 +1,3 @@
-// app/(protected)/products/ProductsClient.tsx
 "use client";
 import { useState, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
@@ -7,7 +6,7 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { Product } from "@prisma/client";
+import { Prisma } from "@prisma/client"; // Correctly importing Prisma
 import {
   Dialog,
   DialogContent,
@@ -17,11 +16,14 @@ import {
 
 interface ProductFilters {
   search?: string;
-  status?: InventoryStatus;
+  status?: Prisma.InventoryStatus; // Ensure proper typing
   warehouseId?: string;
   lowStock?: boolean;
   page?: number;
 }
+
+// Correcting Product type
+type Product = Prisma.ProductGetPayload<{}>;
 
 export default function ProductsClient() {
   const [currentPage, setCurrentPage] = useState(1);
