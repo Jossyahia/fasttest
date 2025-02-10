@@ -1,4 +1,3 @@
-// app/(protected)/products/ProductsClient.tsx
 "use client";
 
 import { useState, useCallback } from "react";
