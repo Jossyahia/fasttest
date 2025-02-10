@@ -6,7 +6,7 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { Prisma } from "@prisma/client";
+import { InventoryStatus } from "@prisma/client"; // ✅ Corrected Import
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
 
 interface ProductFilters {
   search?: string;
-  status?: Prisma.InventoryStatus;
+  status?: InventoryStatus; // ✅ Uses Correct Type
   warehouseId?: string;
   lowStock?: boolean;
   page?: number;
@@ -26,8 +26,8 @@ export default function ProductsClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filters, setFilters] = useState<ProductFilters>({
-    status: Prisma.InventoryStatus.ACTIVE, // Now using status in filters
-  });
+    status: InventoryStatus.ACTIVE,
+  }); // ✅ Default Status
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { products, isLoading, error, pagination, mutate } = useProducts({
