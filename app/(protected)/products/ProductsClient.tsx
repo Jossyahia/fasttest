@@ -1,3 +1,4 @@
+// app/(protected)/products/ProductsClient.tsx
 "use client";
 
 import { useState, useCallback } from "react";
@@ -7,7 +8,7 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { Product, InventoryStatus } from "@prisma/client";
+import type { Product, InventoryStatus } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +53,6 @@ export default function ProductsClient() {
       if (!window.confirm("Are you sure you want to delete this product?")) {
         return;
       }
-
       try {
         const response = await fetch(`/api/products/${id}`, {
           method: "DELETE",
@@ -60,25 +60,22 @@ export default function ProductsClient() {
             "Content-Type": "application/json",
           },
         });
-
         const data = await response.json();
-
         if (!response.ok) {
           throw new Error(data.error || "Failed to delete product");
         }
-
-        mutate(); // Changed from refreshProducts to mutate
+        mutate();
       } catch (error) {
         console.error("Error deleting product:", error);
       }
     },
-    [mutate] // Update dependency
+    [mutate]
   );
 
   const handleProductCreated = useCallback(() => {
     setIsCreateModalOpen(false);
-    mutate(); // Changed from refreshProducts to mutate
-  }, [mutate]); // Update dependency
+    mutate();
+  }, [mutate]);
 
   return (
     <>
@@ -141,7 +138,7 @@ export default function ProductsClient() {
               product={editingProduct}
               onSuccess={() => {
                 setEditingProduct(null);
-                mutate(); // Changed from refreshProducts to mutate
+                mutate();
               }}
               onCancel={() => setEditingProduct(null)}
             />
