@@ -5,6 +5,8 @@ import { useState } from "react";
 import { type InventoryStatus } from "@prisma/client";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { type Product } from "@/types/product";
+import { InventoryStatus } from "@/types/enums"; // Updated import
+
 import {
   Card,
   CardContent,

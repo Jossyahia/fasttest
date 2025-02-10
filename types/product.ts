@@ -1,7 +1,6 @@
-import { type Prisma, type InventoryStatus } from "@prisma/client";
+import { InventoryStatus } from "./enums";
 
-// Extend the Prisma Product type with our custom fields
-export type Product = {
+export interface Product {
   id: string;
   name: string;
   sku: string;
@@ -19,7 +18,7 @@ export type Product = {
     name: string;
     location: string;
   };
-};
+}
 
 export interface ProductFilters {
   search?: string;

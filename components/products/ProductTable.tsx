@@ -2,6 +2,7 @@
 "use client";
 
 import { type Product } from "@/types/product";
+import { InventoryStatus } from "@/types/enums"; // Updated import
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
