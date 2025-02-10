@@ -14,9 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-const status: Prisma.InventoryStatus = Prisma.InventoryStatus.ACTIVE;
-
 interface ProductFilters {
   search?: string;
   status?: Prisma.InventoryStatus;
@@ -28,7 +25,9 @@ interface ProductFilters {
 export default function ProductsClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [filters, setFilters] = useState<ProductFilters>({});
+  const [filters, setFilters] = useState<ProductFilters>({
+    status: Prisma.InventoryStatus.ACTIVE, // Now using status in filters
+  });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { products, isLoading, error, pagination, mutate } = useProducts({
