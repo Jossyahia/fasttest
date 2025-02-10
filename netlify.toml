@@ -1,7 +1,0 @@
-# netlify.toml
-[build]
-  command = "npx prisma generate && npm run build"
-  publish = ".next"
-
-[build.environment]
-  NEXT_TELEMETRY_DISABLED = "1"

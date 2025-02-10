@@ -7,7 +7,7 @@ import ProductTable from "@/components/products/ProductTable";
 import CreateProduct from "@/components/products/CreateProduct";
 import EditProduct from "@/components/products/EditProduct";
 import { Plus } from "lucide-react";
-import { InventoryStatus } from "@/types/enums"; // Updated import
+import { type InventoryStatus } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
