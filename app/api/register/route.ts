@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
 
 // Define CustomerType enum if it's not in your Prisma schema
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest) {
 
       let errorMessage = "Failed to create account. Please try again.";
 
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
           errorMessage =
             "A unique constraint would be violated. Please check your input.";
