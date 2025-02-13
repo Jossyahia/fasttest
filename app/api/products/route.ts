@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { Prisma } from "@prisma/client";
 import type {
   ProductFormData,
   ProductsResponse,
@@ -124,12 +123,13 @@ export async function GET(request: NextRequest) {
     const warehouseId = searchParams.get("warehouseId") || undefined;
     const lowStock = searchParams.get("lowStock") === "true";
 
-    const where: Prisma.ProductWhereInput = {
+    // Define where conditions using Prisma's generated types
+    const where = {
       organizationId: session.user.organizationId,
       ...(search && {
         OR: [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { sku: { contains: search, mode: "insensitive" as const } },
+          { name: { contains: search, mode: "insensitive" } },
+          { sku: { contains: search, mode: "insensitive" } },
         ],
       }),
       ...(status && { status }),
@@ -139,12 +139,12 @@ export async function GET(request: NextRequest) {
           lte: 10,
         },
       }),
-    };
+    } as const;
 
     // Create dynamic orderBy object
-    const orderBy: Prisma.ProductOrderByWithRelationInput = {
+    const orderBy = {
       [sortField]: sortOrder,
-    };
+    } as const;
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
