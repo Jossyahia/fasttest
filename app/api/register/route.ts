@@ -1,14 +1,23 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { UserRole, Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 
 // Define CustomerType enum if it's not in your Prisma schema
 enum CustomerType {
-  RETAIL = "RETAIL",
-  WHOLESALE = "WHOLESALE",
-  THIRDPARTY = "THIRDPARTY",
+  INDIVIDUAL = "INDIVIDUAL",
+  BUSINESS = "BUSINESS",
+  ENTERPRISE = "ENTERPRISE",
+}
+
+// Define UserRole enum to match your Prisma schema exactly
+enum UserRole {
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  STAFF = "STAFF",
+  CUSTOMER = "CUSTOMER",
+  PARTNER = "PARTNER",
 }
 
 export async function POST(request: NextRequest) {
