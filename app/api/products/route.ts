@@ -6,7 +6,7 @@ import type {
   ProductFormData,
   ProductsResponse,
   InventoryStatus,
-} from "@/types/products";
+} from "@/types/product";
 
 export async function POST(request: NextRequest) {
   try {
