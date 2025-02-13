@@ -15,3 +15,12 @@ export function formatCurrency(amount: number): string {
 export function generateOrderNumber(): string {
   return `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
+
+// lib/utils.ts
+export function formatDate(date: Date): string {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}

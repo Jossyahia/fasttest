@@ -8,7 +8,6 @@ interface PageProps {
 }
 
 export default async function EditWarehousePage({ params }: PageProps) {
-  // Wait for params to resolve
   const resolvedParams = await params;
   const { id } = resolvedParams;
 
@@ -21,6 +20,9 @@ export default async function EditWarehousePage({ params }: PageProps) {
     where: {
       id,
       organizationId: session.user.organizationId,
+    },
+    include: {
+      products: true,
     },
   });
 
