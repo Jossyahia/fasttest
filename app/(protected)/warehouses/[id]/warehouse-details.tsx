@@ -1,11 +1,5 @@
 // app/(protected)/warehouses/[id]/warehouse-details.tsx
 import { Warehouse } from "@prisma/client";
-
-interface ExtendedWarehouse extends Warehouse {
-  location: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +23,6 @@ interface WarehouseDetailsProps {
     }>;
   };
 }
-
 export function WarehouseDetails({ warehouse }: WarehouseDetailsProps) {
   return (
     <div className="space-y-6">
