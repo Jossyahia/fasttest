@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { InventoryStatus } from "@prisma/client";
+
+// Define the enum based on your Prisma schema values
+enum InventoryStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  DISCONTINUED = "DISCONTINUED",
+}
 
 export async function GET(req: NextRequest) {
   try {
