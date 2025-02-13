@@ -1,6 +1,6 @@
 import { type Prisma, type InventoryStatus } from "@prisma/client";
 
-// Extend the Prisma Product type with our custom fields
+// Base Product type from Prisma with additional fields
 export type Product = {
   id: string;
   name: string;
@@ -21,6 +21,7 @@ export type Product = {
   };
 };
 
+// Filter options for product queries
 export interface ProductFilters {
   search?: string;
   status?: InventoryStatus;
@@ -28,3 +29,47 @@ export interface ProductFilters {
   lowStock?: boolean;
   page?: number;
 }
+
+// Sorting options
+export interface SortOption {
+  field: keyof Product;
+  direction: "asc" | "desc";
+}
+
+// Pagination information
+export interface PaginationInfo {
+  currentPage: number;
+  pages: number;
+  total: number;
+  perPage: number;
+}
+
+// API response structure for product listings
+export interface ProductsResponse {
+  products: Product[];
+  pagination: PaginationInfo;
+}
+
+// Generic API response wrapper
+export interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+}
+
+// Form data structure for creating/updating products
+export interface ProductFormData {
+  sku: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  minStock: number;
+  status: InventoryStatus;
+  location?: string;
+  warehouseId: string;
+}
+
+// Select type for filtered queries
+export type ProductSelect = Prisma.ProductSelect;
+
+// Include type for related data
+export type ProductInclude = Prisma.ProductInclude;

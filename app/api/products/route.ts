@@ -1,151 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { InventoryStatus, Prisma } from "@prisma/client";
-import { z } from "zod";
+import { Prisma, InventoryStatus } from "@prisma/client";
 
-// Input validation schemas
-const productSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  sku: z.string().min(1, "SKU is required"),
-  description: z.string().optional(),
-  price: z.number().min(0).optional(),
-  quantity: z.number().min(0).default(0),
-  minStock: z.number().min(0).default(0),
-  warehouseId: z.string().min(1, "Warehouse ID is required"),
-  status: z
-    .enum([
-      InventoryStatus.ACTIVE,
-      InventoryStatus.INACTIVE,
-      InventoryStatus.DISCONTINUED,
-    ])
-    .default(InventoryStatus.ACTIVE),
-});
-
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "10");
-    const search = searchParams.get("search");
-    const status = searchParams.get("status") as InventoryStatus | null;
-    const warehouseId = searchParams.get("warehouseId");
-    const lowStock = searchParams.get("lowStock") === "true";
+    const body = await request.json();
 
-    // Validate pagination params
-    if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+    // Validate required fields
+    if (!body.sku?.trim()) {
+      return NextResponse.json({ error: "SKU is required" }, { status: 400 });
+    }
+    if (!body.name?.trim()) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+    if (!body.warehouseId) {
       return NextResponse.json(
-        { error: "Invalid pagination parameters" },
+        { error: "Warehouse is required" },
         { status: 400 }
       );
     }
 
-    // Build where clause
-    const where: Prisma.ProductWhereInput = {
-      organizationId: session.user.organizationId,
-    };
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (warehouseId) {
-      where.warehouseId = warehouseId;
-    }
-
-    if (lowStock) {
-      where.quantity = {
-        lte: prisma.product.fields.minStock,
-      };
-    }
-    const total = await prisma.product.count({ where });
-    const totalPages = Math.ceil(total / limit);
-
-    const products = await prisma.product.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        warehouse: {
-          select: {
-            id: true,
-            name: true,
-            location: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({
-      products,
-      pagination: {
-        total,
-        pages: totalPages,
-        currentPage: page,
-        perPage: limit,
-      },
-    });
-  } catch (error) {
-    console.error("Products GET Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const data = await req.json();
-
-    const validationResult = productSchema.safeParse(data);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: validationResult.error.format() },
-        { status: 400 }
-      );
-    }
-
+    // Validate warehouse exists and belongs to organization
     const warehouse = await prisma.warehouse.findFirst({
       where: {
-        id: data.warehouseId,
+        id: body.warehouseId,
         organizationId: session.user.organizationId,
       },
     });
 
     if (!warehouse) {
       return NextResponse.json(
-        { error: "Invalid warehouse ID" },
+        { error: "Invalid warehouse selected" },
         { status: 400 }
       );
     }
 
-    const existingProduct = await prisma.product.findFirst({
+    // Check for duplicate SKU
+    const existingSku = await prisma.product.findFirst({
       where: {
-        sku: data.sku,
+        sku: body.sku.trim(),
         organizationId: session.user.organizationId,
       },
     });
 
-    if (existingProduct) {
+    if (existingSku) {
       return NextResponse.json(
         { error: "SKU already exists in your organization" },
         { status: 400 }
@@ -154,19 +58,26 @@ export async function POST(req: NextRequest) {
 
     const product = await prisma.product.create({
       data: {
-        ...validationResult.data,
+        sku: body.sku.trim(),
+        name: body.name.trim(),
+        description: body.description?.trim() || "",
         organizationId: session.user.organizationId,
+        warehouseId: body.warehouseId,
+        quantity: Number(body.quantity) || 0,
+        minStock: Number(body.minStock) || 1,
+        status: body.status || "ACTIVE",
+        location: body.location?.trim() || "",
       },
       include: {
         warehouse: {
           select: {
             name: true,
-            location: true,
           },
         },
       },
     });
 
+    // Log activity
     await prisma.activity.create({
       data: {
         action: "PRODUCT_CREATED",
@@ -175,145 +86,95 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(product);
   } catch (error) {
-    console.error("Products POST Error:", error);
+    console.error("Error creating product:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
 }
-
-export async function PUT(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
-    const productId = data.id;
+    const searchParams = request.nextUrl.searchParams;
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const limit = Math.max(1, Number(searchParams.get("limit")) || 6);
+    const search = searchParams.get("search") || undefined;
 
-    if (!productId) {
-      return NextResponse.json(
-        { error: "Product ID is required" },
-        { status: 400 }
-      );
-    }
+    // Add sorting parameters
+    const sortField = searchParams.get("sortField") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
 
-    const validationResult = productSchema.partial().safeParse(data);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: validationResult.error.format() },
-        { status: 400 }
-      );
-    }
+    const statusParam = searchParams.get("status");
+    const isValidStatus = (status: string): status is InventoryStatus => {
+      return ["ACTIVE", "INACTIVE", "DISCONTINUED"].includes(status);
+    };
+    const status =
+      statusParam && isValidStatus(statusParam) ? statusParam : undefined;
 
-    const existingProduct = await prisma.product.findFirst({
-      where: {
-        id: productId,
-        organizationId: session.user.organizationId,
-      },
-    });
+    const warehouseId = searchParams.get("warehouseId") || undefined;
+    const lowStock = searchParams.get("lowStock") === "true";
 
-    if (!existingProduct) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    if (data.sku && data.sku !== existingProduct.sku) {
-      const duplicateSku = await prisma.product.findFirst({
-        where: {
-          sku: data.sku,
-          organizationId: session.user.organizationId,
-          id: { not: productId },
+    const where: Prisma.ProductWhereInput = {
+      organizationId: session.user.organizationId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { sku: { contains: search, mode: "insensitive" as const } },
+        ],
+      }),
+      ...(status && { status }),
+      ...(warehouseId && { warehouseId }),
+      ...(lowStock && {
+        quantity: {
+          lte: 10,
         },
-      });
+      }),
+    };
 
-      if (duplicateSku) {
-        return NextResponse.json(
-          { error: "SKU already exists in your organization" },
-          { status: 400 }
-        );
-      }
-    }
+    // Create dynamic orderBy object
+    const orderBy: Prisma.ProductOrderByWithRelationInput = {
+      [sortField]: sortOrder,
+    };
 
-    const updatedProduct = await prisma.product.update({
-      where: { id: productId },
-      data: validationResult.data,
-      include: {
-        warehouse: {
-          select: {
-            name: true,
-            location: true,
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          warehouse: {
+            select: {
+              name: true,
+            },
           },
         },
+        orderBy, // Use the dynamic orderBy object
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      products,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        currentPage: page,
+        perPage: limit,
       },
     });
-
-    await prisma.activity.create({
-      data: {
-        action: "PRODUCT_UPDATED",
-        details: `Product ${updatedProduct.name} (${updatedProduct.sku}) updated`,
-        userId: session.user.id,
-      },
-    });
-
-    return NextResponse.json(updatedProduct);
   } catch (error) {
-    console.error("Products PUT Error:", error);
+    console.error("Error fetching products:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get("id");
-
-    if (!productId) {
-      return NextResponse.json(
-        { error: "Product ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const product = await prisma.product.findFirst({
-      where: {
-        id: productId,
-        organizationId: session.user.organizationId,
-      },
-    });
-
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    await prisma.product.delete({
-      where: { id: productId },
-    });
-
-    await prisma.activity.create({
-      data: {
-        action: "PRODUCT_DELETED",
-        details: `Product ${product.name} (${product.sku}) deleted`,
-        userId: session.user.id,
-      },
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Products DELETE Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
