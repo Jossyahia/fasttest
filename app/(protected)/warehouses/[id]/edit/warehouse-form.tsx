@@ -3,7 +3,6 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Warehouse } from "@prisma/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -18,6 +17,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import type { Warehouse } from "@/types/warehouse";
+
+interface WarehouseFormData {
+  name: string;
+  location: string;
+}
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -45,10 +50,15 @@ export function WarehouseForm({ warehouse }: WarehouseFormProps) {
   function onSubmit(values: FormValues) {
     startTransition(async () => {
       try {
+        const warehouseData: WarehouseFormData = {
+          name: values.name,
+          location: values.location,
+        };
+
         if (warehouse) {
-          await updateWarehouse(warehouse.id, values);
+          await updateWarehouse(warehouse.id, warehouseData);
         } else {
-          await createWarehouse(values);
+          await createWarehouse(warehouseData);
         }
         router.push("/warehouses");
         router.refresh();
@@ -81,7 +91,7 @@ export function WarehouseForm({ warehouse }: WarehouseFormProps) {
             <FormItem>
               <FormLabel>Location</FormLabel>
               <FormControl>
-                <Input {...field} disabled={isPending} />
+                <Input {...field} value={field.value} disabled={isPending} />
               </FormControl>
               <FormMessage />
             </FormItem>
