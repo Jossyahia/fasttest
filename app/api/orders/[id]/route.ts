@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { z } from "zod";
+import { PrismaClient } from "@prisma/client";
+
+// Type for transaction - represents a transactional version of PrismaClient
+type TransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
 
 const orderItemSchema = z.object({
   productId: z.string(),
@@ -39,10 +46,9 @@ async function checkAuth() {
   return session;
 }
 
-// ✅ Fix: Use `NextRequest` correctly
 export async function GET(request: NextRequest) {
   try {
-    const id = request.nextUrl.pathname.split("/").pop(); // Extract `id`
+    const id = request.nextUrl.pathname.split("/").pop();
     if (!id)
       return NextResponse.json(
         { error: "Order ID is required" },
@@ -118,76 +124,79 @@ export async function PUT(request: NextRequest) {
     );
 
     try {
-      const updatedOrder = await prisma.$transaction(async (tx) => {
-        for (const item of existingOrder.items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { quantity: { increment: item.quantity } },
-          });
-        }
+      const updatedOrder = await prisma.$transaction(
+        async (tx: TransactionClient) => {
+          for (const item of existingOrder.items) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { quantity: { increment: item.quantity } },
+            });
+          }
 
-        await tx.inventoryMovement.deleteMany({ where: { orderId: id } });
-        await tx.orderItem.deleteMany({ where: { orderId: id } });
+          await tx.inventoryMovement.deleteMany({ where: { orderId: id } });
+          await tx.orderItem.deleteMany({ where: { orderId: id } });
 
-        for (const item of validatedData.items) {
-          const product = await tx.product.findFirst({
-            where: {
-              id: item.productId,
-              organizationId: session.user.organizationId,
-            },
-          });
+          for (const item of validatedData.items) {
+            const product = await tx.product.findFirst({
+              where: {
+                id: item.productId,
+                organizationId: session.user.organizationId,
+              },
+            });
 
-          if (!product) throw new Error(`Product ${item.productId} not found`);
-          if (product.quantity < item.quantity)
-            throw new Error(`Insufficient stock for product ${product.name}`);
-        }
+            if (!product)
+              throw new Error(`Product ${item.productId} not found`);
+            if (product.quantity < item.quantity)
+              throw new Error(`Insufficient stock for product ${product.name}`);
+          }
 
-        await tx.order.update({
-          where: { id },
-          data: {
-            total,
-            status: validatedData.status,
-            paymentStatus: validatedData.paymentStatus,
-            paymentType: validatedData.paymentType,
-            shippingAddress: validatedData.shippingAddress,
-            notes: validatedData.notes,
-            customerId: validatedData.customerId,
-          },
-        });
-
-        await tx.orderItem.createMany({
-          data: validatedData.items.map((item) => ({
-            orderId: id,
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        });
-
-        for (const item of validatedData.items) {
-          await tx.inventoryMovement.create({
+          await tx.order.update({
+            where: { id },
             data: {
-              type: "SALE",
-              quantity: -item.quantity,
-              reference: existingOrder.orderNumber,
-              notes: `Order ${existingOrder.orderNumber} updated`,
-              productId: item.productId,
-              userId: session.user.id,
-              orderId: id,
+              total,
+              status: validatedData.status,
+              paymentStatus: validatedData.paymentStatus,
+              paymentType: validatedData.paymentType,
+              shippingAddress: validatedData.shippingAddress,
+              notes: validatedData.notes,
+              customerId: validatedData.customerId,
             },
           });
 
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { quantity: { decrement: item.quantity } },
+          await tx.orderItem.createMany({
+            data: validatedData.items.map((item) => ({
+              orderId: id,
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          });
+
+          for (const item of validatedData.items) {
+            await tx.inventoryMovement.create({
+              data: {
+                type: "SALE",
+                quantity: -item.quantity,
+                reference: existingOrder.orderNumber,
+                notes: `Order ${existingOrder.orderNumber} updated`,
+                productId: item.productId,
+                userId: session.user.id,
+                orderId: id,
+              },
+            });
+
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { quantity: { decrement: item.quantity } },
+            });
+          }
+
+          return tx.order.findUnique({
+            where: { id },
+            include: { items: { include: { product: true } }, customer: true },
           });
         }
-
-        return tx.order.findUnique({
-          where: { id },
-          include: { items: { include: { product: true } }, customer: true },
-        });
-      });
+      );
 
       return NextResponse.json(updatedOrder);
     } catch (txError) {
@@ -228,7 +237,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: TransactionClient) => {
       for (const item of existingOrder.items) {
         await tx.product.update({
           where: { id: item.productId },
