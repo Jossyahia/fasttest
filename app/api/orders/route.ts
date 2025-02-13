@@ -3,6 +3,13 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
+import { Prisma } from "@prisma/client";
+
+export enum InventoryStatus {
+  ACTIVE = "ACTIVE", 
+  INAVTIVE = "INACTIVE",
+  DISCONTINUED = "DISCONTINUED",
+}
 // Validation schemas
 const orderItemSchema = z.object({
   productId: z.string().min(1),
