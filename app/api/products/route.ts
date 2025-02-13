@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { Prisma, InventoryStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type {
+  ProductFormData,
+  ProductsResponse,
+  InventoryStatus,
+} from "@/types/products";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as ProductFormData;
 
     // Validate required fields
     if (!body.sku?.trim()) {
@@ -95,6 +100,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -113,13 +119,8 @@ export async function GET(request: NextRequest) {
       | "asc"
       | "desc";
 
-    const statusParam = searchParams.get("status");
-    const isValidStatus = (status: string): status is InventoryStatus => {
-      return ["ACTIVE", "INACTIVE", "DISCONTINUED"].includes(status);
-    };
-    const status =
-      statusParam && isValidStatus(statusParam) ? statusParam : undefined;
-
+    const statusParam = searchParams.get("status") as InventoryStatus | null;
+    const status = statusParam || undefined;
     const warehouseId = searchParams.get("warehouseId") || undefined;
     const lowStock = searchParams.get("lowStock") === "true";
 
@@ -157,12 +158,12 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy, // Use the dynamic orderBy object
+        orderBy,
       }),
       prisma.product.count({ where }),
     ]);
 
-    return NextResponse.json({
+    const response: ProductsResponse = {
       products,
       pagination: {
         total,
@@ -170,7 +171,9 @@ export async function GET(request: NextRequest) {
         currentPage: page,
         perPage: limit,
       },
-    });
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
