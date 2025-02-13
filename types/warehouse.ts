@@ -1,5 +1,4 @@
-import { InventoryStatus } from "@prisma/client";
-
+import { InventoryStatus, Product as PrismaProduct } from "@prisma/client";
 // types/form.ts
 export interface WarehouseFormData {
   name: string;
