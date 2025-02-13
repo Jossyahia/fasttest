@@ -1,5 +1,4 @@
 // app/(protected)/warehouses/[id]/warehouse-details.tsx
-import { Warehouse } from "@prisma/client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +9,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
+
+interface Warehouse {
+  id: string;
+  name: string;
+  location: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface WarehouseDetailsProps {
   warehouse: Warehouse & {
@@ -23,7 +30,9 @@ interface WarehouseDetailsProps {
     }>;
   };
 }
+
 export function WarehouseDetails({ warehouse }: WarehouseDetailsProps) {
+  // Rest of the component remains the same
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
