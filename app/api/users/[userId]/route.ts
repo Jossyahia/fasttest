@@ -8,6 +8,9 @@ interface UpdateUserRequest {
   role?: UserRole;
 }
 
+/**
+ * DELETE /api/users/[userId]
+ */
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: { userId: string } }
@@ -20,14 +23,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        organizationId: session.user.organizationId,
-      },
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    if (!existingUser) {
+    if (
+      !existingUser ||
+      existingUser.organizationId !== session.user.organizationId
+    ) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -45,6 +48,9 @@ export async function DELETE(
   }
 }
 
+/**
+ * PATCH /api/users/[userId]
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { userId: string } }
@@ -74,14 +80,14 @@ export async function PATCH(
       );
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        organizationId: session.user.organizationId,
-      },
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    if (!existingUser) {
+    if (
+      !existingUser ||
+      existingUser.organizationId !== session.user.organizationId
+    ) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
