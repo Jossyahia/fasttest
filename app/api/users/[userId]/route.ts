@@ -8,15 +8,14 @@ interface UpdateUserRequest {
   role?: UserRole;
 }
 
-/**
- * DELETE /api/users/[userId]
- */
+// DELETE /api/users/[userId]
 export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: { userId: string } }
+  request: NextRequest,
+  context: { params: { userId: string } }
 ) {
+  const { userId } = context.params;
+
   try {
-    const { userId } = params;
     const session = await auth();
 
     if (!session?.user?.organizationId) {
@@ -34,29 +33,26 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    await prisma.user.delete({ where: { id: userId } });
 
-    return NextResponse.json(
-      { message: "User deleted successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("[USER_DELETE]", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-/**
- * PATCH /api/users/[userId]
- */
+// PATCH /api/users/[userId]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: { userId: string } }
 ) {
+  const { userId } = context.params;
+
   try {
-    const { userId } = params;
     const session = await auth();
 
     if (!session?.user?.organizationId) {
@@ -99,9 +95,12 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json(updatedUser, { status: 200 });
+    return NextResponse.json(updatedUser);
   } catch (error) {
     console.error("[USER_PATCH]", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
