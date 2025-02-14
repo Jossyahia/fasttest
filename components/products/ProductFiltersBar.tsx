@@ -1,7 +1,13 @@
 "use client";
 
 import { ProductFilters, SortOption } from "@/types/product";
-import { InventoryStatus } from "@prisma/client";
+
+// Define the InventoryStatus enum locally
+export enum InventoryStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  DISCONTINUED = "DISCONTINUED",
+}
 
 interface ProductFiltersBarProps {
   filters: ProductFilters;
