@@ -20,13 +20,6 @@ interface Product {
   status: string;
 }
 
-interface ProductsResponseData {
-  products: Product[];
-  pagination: {
-    pages: number;
-  };
-}
-
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +47,10 @@ export default function ProductList() {
       setLoading(true);
       console.log("Fetching products with:", { filters, sort, page }); // Debug log
 
-      const response = await getProducts(filters, sort, page);
+      const response = (await getProducts(filters, sort, page)) as {
+        products: Product[];
+        pagination: { pages: number };
+      };
       console.log("API Response:", response); // Debug log
 
       if (!response || !response.products) {
