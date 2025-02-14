@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CustomerType, UserRole } from "@prisma/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -32,6 +31,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+
+// Define enums locally since they're not exported from "@prisma/client"
+export enum CustomerType {
+  RETAIL = "RETAIL",
+  WHOLESALE = "WHOLESALE",
+  THIRDPARTY = "THIRDPARTY",
+}
+
+export enum UserRole {
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  STAFF = "STAFF",
+  CUSTOMER = "CUSTOMER",
+  PARTNER = "PARTNER",
+}
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
