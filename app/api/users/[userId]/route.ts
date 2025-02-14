@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { UserRole } from "@prisma/client";
+
+enum UserRole {
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  STAFF = "STAFF",
+  CUSTOMER = "CUSTOMER",
+  PARTNER = "PARTNER",
+}
 
 interface UpdateUserRequest {
   name?: string;
