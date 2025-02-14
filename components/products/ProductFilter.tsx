@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
-import { InventoryStatus } from "@prisma/client";
 import { Search, X } from "lucide-react";
-import debounce from "lodash/debounce"; // Correct way to import debounce
+import debounce from "lodash/debounce";
+
+// Define the InventoryStatus enum locally based on your Prisma model
+export enum InventoryStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  DISCONTINUED = "DISCONTINUED",
+}
 
 interface Warehouse {
   id: string;
@@ -63,12 +69,11 @@ export default function ProductFilter({ onFilterChange }: ProductFiltersProps) {
     });
   }, 300);
 
-  // Cleanup debounced function on component unmount
-useEffect(() => {
-  return () => {
-    debouncedSearch.cancel();
-  };
-}, [debouncedSearch]);
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -140,7 +145,7 @@ useEffect(() => {
           className="rounded-md border border-gray-300 px-3 py-2"
         >
           <option value="">All Statuses</option>
-          {InventoryStatus && Object.values(InventoryStatus).map((s) => (
+          {Object.values(InventoryStatus).map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
