@@ -29,13 +29,6 @@ interface SortOption {
   direction: "asc" | "desc";
 }
 
-interface ProductsResponse {
-  products: Product[];
-  pagination: {
-    pages: number;
-  };
-}
-
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +46,9 @@ export default function ProductList() {
 
     try {
       setLoading(true);
-      const data = await getProducts(filters, sort, page);
-      setProducts(data.products);
-      setTotalPages(data.pagination.pages);
+      const { products, pagination } = await getProducts(filters, sort, page);
+      setProducts(products);
+      setTotalPages(pagination.pages);
       setError(null);
     } catch (err) {
       const errorMessage =
