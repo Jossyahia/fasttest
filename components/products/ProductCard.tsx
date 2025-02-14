@@ -1,6 +1,5 @@
 "use client";
 
-import { Product, InventoryStatus } from "@prisma/client";
 import { useState } from "react";
 import ProductModal from "./ProductModal";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "react-hot-toast";
 
+// Define the Product type and InventoryStatus enum locally based on your Prisma model
+export interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string | null;
+  quantity: number;
+  minStock: number;
+  location?: string | null;
+  status: InventoryStatus;
+}
+
+export enum InventoryStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  DISCONTINUED = "DISCONTINUED",
+}
+
 interface ProductCardProps {
   product: Product;
   onUpdate: () => Promise<void>;
@@ -28,10 +45,10 @@ export default function ProductCard({ product, onUpdate }: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const getStatusColor = (status: InventoryStatus) => {
-    const styles = {
-      ACTIVE: "bg-green-100 text-green-800",
-      INACTIVE: "bg-gray-100 text-gray-800",
-      DISCONTINUED: "bg-red-100 text-red-800",
+    const styles: Record<InventoryStatus, string> = {
+      [InventoryStatus.ACTIVE]: "bg-green-100 text-green-800",
+      [InventoryStatus.INACTIVE]: "bg-gray-100 text-gray-800",
+      [InventoryStatus.DISCONTINUED]: "bg-red-100 text-red-800",
     };
     return styles[status] || "bg-gray-100 text-gray-800";
   };
