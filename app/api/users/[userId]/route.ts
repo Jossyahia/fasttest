@@ -1,120 +1,153 @@
-import { type NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { UserRole } from "@prisma/client"; // Ensure Prisma client is generated!
-
-// Define allowed roles from Prisma
-const allowedRoles = Object.values(UserRole);
+import { UserRole } from "@prisma/client";
 
 interface UpdateUserRequest {
   name?: string;
   role?: UserRole;
 }
 
-/**
- * Update User API Handler (PUT)
- */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { userId: string } }
-): Promise<Response> {
+) {
   try {
     const { userId } = params;
     const session = await auth();
 
     if (!session?.user?.organizationId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Parse request body
     const body: UpdateUserRequest = await request.json();
     const { name, role } = body;
 
-    // Validate input
     if (!name || !role) {
-      return new Response(
-        JSON.stringify({ error: "Name and role are required" }),
+      return NextResponse.json(
+        { error: "Name and role are required" },
         { status: 400 }
       );
     }
 
-    // Validate role against Prisma UserRole enum
-    if (!allowedRoles.includes(role)) {
-      return new Response(JSON.stringify({ error: "Invalid role specified" }), {
-        status: 400,
-      });
+    if (!Object.values(UserRole).includes(role)) {
+      return NextResponse.json(
+        { error: "Invalid role specified" },
+        { status: 400 }
+      );
     }
 
-    // Check if user exists
     const existingUser = await prisma.user.findFirst({
-      where: { id: userId, organizationId: session.user.organizationId },
+      where: {
+        id: userId,
+        organizationId: session.user.organizationId,
+      },
     });
 
     if (!existingUser) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { name, role },
     });
 
-    return new Response(JSON.stringify(updatedUser), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(updatedUser, { status: 200 });
   } catch (error) {
     console.error("[USER_UPDATE]", error);
-    return new Response(JSON.stringify({ error: "Internal Error" }), {
-      status: 500,
-    });
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
 
-/**
- * Delete User API Handler (DELETE)
- */
 export async function DELETE(
-  _req: NextRequest,
+  _request: NextRequest,
   { params }: { params: { userId: string } }
-): Promise<Response> {
+) {
   try {
     const { userId } = params;
     const session = await auth();
 
     if (!session?.user?.organizationId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user exists
-    const user = await prisma.user.findFirst({
-      where: { id: userId, organizationId: session.user.organizationId },
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: session.user.organizationId,
+      },
     });
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Delete user
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.user.delete({
+      where: { id: userId },
+    });
 
-    return new Response(
-      JSON.stringify({ message: "User deleted successfully" }),
+    return NextResponse.json(
+      { message: "User deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
     console.error("[USER_DELETE]", error);
-    return new Response(JSON.stringify({ error: "Internal Error" }), {
-      status: 500,
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const { userId } = params;
+    const session = await auth();
+
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body: UpdateUserRequest = await request.json();
+    const { name, role } = body;
+
+    if (!name && !role) {
+      return NextResponse.json(
+        { error: "At least one field (name or role) is required" },
+        { status: 400 }
+      );
+    }
+
+    if (role && !Object.values(UserRole).includes(role)) {
+      return NextResponse.json(
+        { error: "Invalid role specified" },
+        { status: 400 }
+      );
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: session.user.organizationId,
+      },
     });
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: name ?? existingUser.name,
+        role: role ?? existingUser.role,
+      },
+    });
+
+    return NextResponse.json(updatedUser, { status: 200 });
+  } catch (error) {
+    console.error("[USER_PATCH]", error);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
