@@ -84,7 +84,8 @@ export default function ProductFiltersBar({
         </label>
 
         <select
-          value={`${sort.field}-${sort.direction}`}
+          // Wrap sort.field with String(...) to avoid implicit symbol conversion
+          value={`${String(sort.field)}-${sort.direction}`}
           onChange={(e) => {
             const [field, direction] = e.target.value.split("-");
             onSortChange({
