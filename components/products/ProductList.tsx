@@ -7,7 +7,13 @@ import ProductCard from "./ProductCard";
 import ProductHeader from "./ProductHeader";
 import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
-import { ProductFilters, SortOption } from "@/types/product";
+import type { ProductFilters, SortOption } from "@/types/product";
+
+// Ensure field is string type for the sort option used with getProducts
+interface GetProductsSortOption {
+  field: string;
+  direction: "asc" | "desc";
+}
 
 interface Product {
   id: string;
@@ -27,7 +33,7 @@ export default function ProductList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState<ProductFilters>({});
-  const [sort, setSort] = useState<SortOption>({
+  const [sort, setSort] = useState<GetProductsSortOption>({
     field: "createdAt",
     direction: "desc",
   });
@@ -38,7 +44,11 @@ export default function ProductList() {
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
-    setSort(newSort);
+    // Ensure the sort field is a string when updating
+    setSort({
+      field: String(newSort.field),
+      direction: newSort.direction,
+    });
     setPage(1); // Reset to first page when sort changes
   }, []);
 
@@ -51,6 +61,7 @@ export default function ProductList() {
         products: Product[];
         pagination: { pages: number };
       };
+
       console.log("API Response:", response); // Debug log
 
       if (!response || !response.products) {
@@ -99,7 +110,7 @@ export default function ProductList() {
       <ProductFiltersBar
         filters={filters}
         onFilterChange={handleFilterChange}
-        sort={sort}
+        sort={sort as SortOption}
         onSortChange={handleSortChange}
       />
 
