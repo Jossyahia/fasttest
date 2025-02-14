@@ -6,7 +6,15 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+
+// Define the UserRole enum locally instead of importing it from "@prisma/client"
+export enum UserRole {
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  STAFF = "STAFF",
+  CUSTOMER = "CUSTOMER",
+  PARTNER = "PARTNER",
+}
 
 interface CredentialsType {
   email: string;
