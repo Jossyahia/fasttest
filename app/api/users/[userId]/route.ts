@@ -8,18 +8,13 @@ interface UpdateUserRequest {
   role?: UserRole;
 }
 
-/**
- * DELETE /api/users/[userId]
- */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Record<string, string> }
-) {
-  const userId = params.userId;
-
+  context: { params: { userId: string } }
+): Promise<NextResponse> {
+  const { userId } = context.params;
   try {
     const session = await auth();
-
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -36,7 +31,6 @@ export async function DELETE(
     }
 
     await prisma.user.delete({ where: { id: userId } });
-
     return NextResponse.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("[USER_DELETE]", error);
@@ -47,18 +41,13 @@ export async function DELETE(
   }
 }
 
-/**
- * PATCH /api/users/[userId]
- */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Record<string, string> }
-) {
-  const userId = params.userId;
-
+  context: { params: { userId: string } }
+): Promise<NextResponse> {
+  const { userId } = context.params;
   try {
     const session = await auth();
-
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
