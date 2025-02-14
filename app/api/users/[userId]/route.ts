@@ -8,13 +8,44 @@ interface UpdateUserRequest {
   role?: UserRole;
 }
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { userId: string } } // Correct destructuring
+): Promise<NextResponse> {
+  const { userId } = params; // Directly access from params
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (
+      !existingUser ||
+      existingUser.organizationId !== session.user.organizationId
+    ) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    await prisma.user.delete({ where: { id: userId } });
+    return NextResponse.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("[USER_DELETE]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { userId: string } }
+  { params }: { params: { userId: string } } // Correct destructuring
 ): Promise<NextResponse> {
-  const { userId } = context.params;
+  const { userId } = params; // Directly access from params
   try {
     const session = await auth();
     if (!session?.user?.organizationId) {
