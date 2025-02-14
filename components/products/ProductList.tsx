@@ -9,7 +9,6 @@ import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
 import { ProductFilters, SortOption } from "@/types/product";
 
-// Define the Product type locally based on your Prisma model
 interface Product {
   id: string;
   name: string;
@@ -42,35 +41,42 @@ export default function ProductList() {
 
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setFilters(newFilters);
+    setPage(1); // Reset to first page when filters change
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
+    setPage(1); // Reset to first page when sort changes
   }, []);
 
   const fetchProducts = useCallback(async () => {
-    if (loading) return;
-
     try {
       setLoading(true);
-      const { products, pagination } = (await getProducts(
-        filters,
-        sort,
-        page
-      )) as ProductsResponseData;
-      setProducts(products);
-      setTotalPages(pagination.pages);
+      console.log("Fetching products with:", { filters, sort, page }); // Debug log
+
+      const response = await getProducts(filters, sort, page);
+      console.log("API Response:", response); // Debug log
+
+      if (!response || !response.products) {
+        throw new Error("Invalid response format from API");
+      }
+
+      setProducts(response.products);
+      setTotalPages(response.pagination.pages);
       setError(null);
     } catch (err) {
+      console.error("Error fetching products:", err); // Debug log
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch products";
       setError(errorMessage);
       toast.error("Failed to load products");
+      setProducts([]); // Clear products on error
     } finally {
       setLoading(false);
     }
-  }, [page, filters, sort, loading]);
+  }, [page, filters, sort]);
 
+  // Initial fetch
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
@@ -101,21 +107,31 @@ export default function ProductList() {
         onSortChange={handleSortChange}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <ProductSkeletons count={6} />
-        ) : (
-          products.map((product) => (
+        </div>
+      ) : products.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               onUpdate={fetchProducts}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-500">No products found</div>
+      )}
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      {!loading && products.length > 0 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }
