@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hash } from "bcryptjs";
-import { UserRole } from "@prisma/client";
+
+// Define the UserRole enum locally
+enum UserRole {
+  ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  STAFF = "STAFF",
+  CUSTOMER = "CUSTOMER",
+  PARTNER = "PARTNER",
+}
 
 export async function GET() {
   try {
