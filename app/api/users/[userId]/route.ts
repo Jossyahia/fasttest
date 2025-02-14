@@ -4,13 +4,15 @@ import { auth } from "@/auth";
 import { UserRole } from "@prisma/client";
 
 // Define allowed roles
-const allowedRoles: UserRole[] = [
-  "ADMIN",
-  "MANAGER",
-  "STAFF",
-  "CUSTOMER",
-  "PARTNER",
-];
+const UserRole = {
+  ADMIN: "ADMIN",
+  MANAGER: "MANAGER",
+  STAFF: "STAFF",
+  CUSTOMER: "CUSTOMER",
+  PARTNER: "PARTNER",
+} as const;
+
+type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 interface UpdateUserRequest {
   name?: string;
