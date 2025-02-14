@@ -1,9 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Activity } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { Activity as ActivityIcon } from "lucide-react";
+
+// Define the Activity type based on your Prisma model
+export interface Activity {
+  id: string;
+  action: string;
+  details?: string | null;
+  createdAt: Date;
+  userId: string;
+}
 
 interface ActivityListProps {
   initialData?: Activity[];
@@ -30,7 +38,7 @@ export function ActivityList({ initialData }: ActivityListProps) {
   } = useQuery({
     queryKey: ["activities"],
     queryFn: getActivities,
-    initialData: initialData, // Use the initialData prop here
+    initialData,
   });
 
   if (isLoading && !initialData) {

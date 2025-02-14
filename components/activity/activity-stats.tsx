@@ -1,5 +1,13 @@
 // components/activity/activity-stats.tsx
-import { Activity } from "@prisma/client";
+
+// Define the Activity type locally based on your Prisma model
+interface Activity {
+  id: string;
+  action: string;
+  details?: string | null;
+  createdAt: Date;
+  userId: string;
+}
 
 interface ActivityStatsProps {
   activities: Activity[];
