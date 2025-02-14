@@ -8,22 +8,18 @@ import ProductHeader from "./ProductHeader";
 import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
 import type { ProductFilters, SortOption } from "@/types/product";
+import type { Product } from "./ProductCard"; // Import Product type from ProductCard
 
-// Ensure field is string type for the sort option used with getProducts
 interface GetProductsSortOption {
   field: string;
   direction: "asc" | "desc";
 }
 
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  description?: string | null;
-  quantity: number;
-  minStock: number;
-  location?: string | null;
-  status: string;
+interface ProductsResponse {
+  products: Product[];
+  pagination: {
+    pages: number;
+  };
 }
 
 export default function ProductList() {
@@ -44,7 +40,6 @@ export default function ProductList() {
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
-    // Ensure the sort field is a string when updating
     setSort({
       field: String(newSort.field),
       direction: newSort.direction,
@@ -57,11 +52,11 @@ export default function ProductList() {
       setLoading(true);
       console.log("Fetching products with:", { filters, sort, page }); // Debug log
 
-      const response = (await getProducts(filters, sort, page)) as {
-        products: Product[];
-        pagination: { pages: number };
-      };
-
+      const response = (await getProducts(
+        filters,
+        sort,
+        page
+      )) as ProductsResponse;
       console.log("API Response:", response); // Debug log
 
       if (!response || !response.products) {
