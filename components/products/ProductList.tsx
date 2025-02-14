@@ -7,8 +7,9 @@ import ProductCard from "./ProductCard";
 import ProductHeader from "./ProductHeader";
 import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
+import { ProductFilters, SortOption } from "@/types/product";
 
-// Type Definitions
+// Define the Product type locally based on your Prisma model
 interface Product {
   id: string;
   name: string;
@@ -20,13 +21,11 @@ interface Product {
   status: string;
 }
 
-interface ProductFilters {
-  [key: string]: unknown;
-}
-
-interface SortOption {
-  field: string;
-  direction: "asc" | "desc";
+interface ProductsResponseData {
+  products: Product[];
+  pagination: {
+    pages: number;
+  };
 }
 
 export default function ProductList() {
@@ -41,12 +40,24 @@ export default function ProductList() {
     direction: "desc",
   });
 
+  const handleFilterChange = useCallback((newFilters: ProductFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleSortChange = useCallback((newSort: SortOption) => {
+    setSort(newSort);
+  }, []);
+
   const fetchProducts = useCallback(async () => {
     if (loading) return;
 
     try {
       setLoading(true);
-      const { products, pagination } = await getProducts(filters, sort, page);
+      const { products, pagination } = (await getProducts(
+        filters,
+        sort,
+        page
+      )) as ProductsResponseData;
       setProducts(products);
       setTotalPages(pagination.pages);
       setError(null);
@@ -85,9 +96,9 @@ export default function ProductList() {
 
       <ProductFiltersBar
         filters={filters}
-        onFilterChange={setFilters}
+        onFilterChange={handleFilterChange}
         sort={sort}
-        onSortChange={setSort}
+        onSortChange={handleSortChange}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
