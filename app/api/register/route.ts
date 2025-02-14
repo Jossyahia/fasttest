@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
 
@@ -129,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     try {
       type TransactionClient = Omit<
-        PrismaClient,
+        typeof prisma,
         "$connect" | "$disconnect" | "$on" | "$transaction" | "$use"
       >;
 
