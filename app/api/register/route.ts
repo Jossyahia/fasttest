@@ -1,25 +1,29 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
 
-// Define CustomerType enum if it's not in your Prisma schema
-enum CustomerType {
-  INDIVIDUAL = "INDIVIDUAL",
-  BUSINESS = "BUSINESS",
-  ENTERPRISE = "ENTERPRISE",
-}
+// Define CustomerType enum to match your Prisma schema
+const CustomerType = {
+  INDIVIDUAL: "INDIVIDUAL",
+  BUSINESS: "BUSINESS",
+  ENTERPRISE: "ENTERPRISE",
+} as const;
 
-// Define UserRole enum to match your Prisma schema exactly
-enum UserRole {
-  ADMIN = "ADMIN",
-  MANAGER = "MANAGER",
-  STAFF = "STAFF",
-  CUSTOMER = "CUSTOMER",
-  PARTNER = "PARTNER",
-}
+type CustomerType = (typeof CustomerType)[keyof typeof CustomerType];
+
+// Define UserRole to match your Prisma schema
+const UserRole = {
+  ADMIN: "ADMIN",
+  MANAGER: "MANAGER",
+  STAFF: "STAFF",
+  CUSTOMER: "CUSTOMER",
+  PARTNER: "PARTNER",
+} as const;
+
+type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export async function POST(request: NextRequest) {
   if (!request.body) {
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate customer type
-    if (!Object.values(CustomerType).includes(customerType)) {
+    if (!(customerType in CustomerType)) {
       return new Response(
         JSON.stringify({
           error: "Invalid customer type",
@@ -156,7 +160,7 @@ export async function POST(request: NextRequest) {
               email,
               phone: phone || null,
               address: address || null,
-              type: customerType,
+              type: customerType as CustomerType,
               organizationId: organization.id,
             },
           });
