@@ -1,7 +1,13 @@
-import { Activity } from "@prisma/client";
+interface Activity {
+  id: string;
+  action: string;
+  details?: string | null;
+  createdAt: Date;
+  userId: string;
+}
 
 interface ActivityListProps {
-  initialData: Activity[]; // Changed from 'activities' to 'initialData' to match usage
+  initialData: Activity[];
 }
 
 export default function ActivityList({ initialData }: ActivityListProps) {
