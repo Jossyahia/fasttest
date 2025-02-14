@@ -8,11 +8,13 @@ interface UpdateUserRequest {
   role?: UserRole;
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: { userId: string } } // Correct destructuring
-): Promise<NextResponse> {
-  const { userId } = params; // Directly access from params
+function getUserId(request: NextRequest) {
+  const segments = request.nextUrl.pathname.split("/");
+  return segments[segments.length - 1];
+}
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  const userId = getUserId(request);
   try {
     const session = await auth();
     if (!session?.user?.organizationId) {
@@ -22,7 +24,6 @@ export async function DELETE(
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (
       !existingUser ||
       existingUser.organizationId !== session.user.organizationId
@@ -41,11 +42,8 @@ export async function DELETE(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { userId: string } } // Correct destructuring
-): Promise<NextResponse> {
-  const { userId } = params; // Directly access from params
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
+  const userId = getUserId(request);
   try {
     const session = await auth();
     if (!session?.user?.organizationId) {
@@ -72,7 +70,6 @@ export async function PATCH(
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (
       !existingUser ||
       existingUser.organizationId !== session.user.organizationId
