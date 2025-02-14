@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Product } from "@prisma/client";
 import { ProductFilters, SortOption } from "@/types/product";
 import ProductCard from "./ProductCard";
 import ProductHeader from "./ProductHeader";
@@ -9,33 +8,38 @@ import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
-
-// Ensure the ProductsResponse type includes the pagination property
 import type { ProductsResponse } from "@/types/product";
 
+// Define the Product type locally based on your Prisma model
+export interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string | null;
+  quantity: number;
+  minStock: number;
+  location?: string | null;
+  status: string; // Adjust as needed, or replace with a local InventoryStatus enum if available
+}
+
 export default function ProductList() {
-  // State declarations
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1); // Properly declared
-  const [totalPages, setTotalPages] = useState(1); // Properly declared
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState<ProductFilters>({});
   const [sort, setSort] = useState<SortOption>({
     field: "createdAt",
     direction: "desc",
   });
 
-  // In ProductList.tsx - Update the fetchProducts function
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      // Cast the response as ProductsResponse to access pagination
       const data = (await getProducts(filters, sort, page)) as ProductsResponse;
-
-      // Use the pagination data from the API response
       setProducts(data.products);
-      setTotalPages(data.pagination.pages); // Use pages from pagination object
+      setTotalPages(data.pagination.pages);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
@@ -92,7 +96,6 @@ export default function ProductList() {
             ))}
       </div>
 
-      {/* Pagination Controls */}
       <div className="flex items-center justify-between px-4 py-4 border-t">
         <Button
           variant="outline"
