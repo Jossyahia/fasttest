@@ -1,30 +1,25 @@
 import { type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client"; // Ensure Prisma client is generated!
 
-// Define allowed roles
-const UserRole = {
-  ADMIN: "ADMIN",
-  MANAGER: "MANAGER",
-  STAFF: "STAFF",
-  CUSTOMER: "CUSTOMER",
-  PARTNER: "PARTNER",
-} as const;
-
-type UserRole = (typeof UserRole)[keyof typeof UserRole];
+// Define allowed roles from Prisma
+const allowedRoles = Object.values(UserRole);
 
 interface UpdateUserRequest {
   name?: string;
   role?: UserRole;
 }
 
+/**
+ * Update User API Handler (PUT)
+ */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: { userId: string } }
 ): Promise<Response> {
   try {
-    const { userId } = await params;
+    const { userId } = params;
     const session = await auth();
 
     if (!session?.user?.organizationId) {
@@ -33,10 +28,11 @@ export async function PUT(
       });
     }
 
-    // Parse and validate request body
+    // Parse request body
     const body: UpdateUserRequest = await request.json();
     const { name, role } = body;
 
+    // Validate input
     if (!name || !role) {
       return new Response(
         JSON.stringify({ error: "Name and role are required" }),
@@ -44,18 +40,16 @@ export async function PUT(
       );
     }
 
-    // Validate role if provided
-    if (role && !allowedRoles.includes(role)) {
+    // Validate role against Prisma UserRole enum
+    if (!allowedRoles.includes(role)) {
       return new Response(JSON.stringify({ error: "Invalid role specified" }), {
         status: 400,
       });
     }
 
+    // Check if user exists
     const existingUser = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        organizationId: session.user.organizationId,
-      },
+      where: { id: userId, organizationId: session.user.organizationId },
     });
 
     if (!existingUser) {
@@ -64,6 +58,7 @@ export async function PUT(
       });
     }
 
+    // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { name, role },
@@ -71,9 +66,7 @@ export async function PUT(
 
     return new Response(JSON.stringify(updatedUser), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("[USER_UPDATE]", error);
@@ -83,12 +76,15 @@ export async function PUT(
   }
 }
 
+/**
+ * Delete User API Handler (DELETE)
+ */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: { userId: string } }
 ): Promise<Response> {
   try {
-    const { userId } = await params;
+    const { userId } = params;
     const session = await auth();
 
     if (!session?.user?.organizationId) {
@@ -97,11 +93,9 @@ export async function DELETE(
       });
     }
 
+    // Check if user exists
     const user = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        organizationId: session.user.organizationId,
-      },
+      where: { id: userId, organizationId: session.user.organizationId },
     });
 
     if (!user) {
@@ -110,10 +104,12 @@ export async function DELETE(
       });
     }
 
+    // Delete user
     await prisma.user.delete({ where: { id: userId } });
 
     return new Response(
-      JSON.stringify({ message: "User deleted successfully" })
+      JSON.stringify({ message: "User deleted successfully" }),
+      { status: 200 }
     );
   } catch (error) {
     console.error("[USER_DELETE]", error);
