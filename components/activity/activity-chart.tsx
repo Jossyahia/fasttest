@@ -3,7 +3,15 @@
 import { useEffect, useRef } from "react";
 import Chart from "chart.js/auto";
 import type { ChartConfiguration } from "chart.js";
-import { Activity } from "@prisma/client";
+
+// Define the Activity type locally based on your Prisma model
+interface Activity {
+  id: string;
+  action: string;
+  details?: string | null;
+  createdAt: Date;
+  userId: string;
+}
 
 interface ActivityChartProps {
   activities: Activity[];
