@@ -8,12 +8,14 @@ interface UpdateUserRequest {
   role?: UserRole;
 }
 
-// DELETE /api/users/[userId]
+/**
+ * DELETE /api/users/[userId]
+ */
 export async function DELETE(
-  request: NextRequest,
-  context: { params: { userId: string } }
+  _request: NextRequest,
+  { params }: { params: Record<string, string> }
 ) {
-  const { userId } = context.params;
+  const userId = params.userId;
 
   try {
     const session = await auth();
@@ -45,12 +47,14 @@ export async function DELETE(
   }
 }
 
-// PATCH /api/users/[userId]
+/**
+ * PATCH /api/users/[userId]
+ */
 export async function PATCH(
   request: NextRequest,
-  context: { params: { userId: string } }
+  { params }: { params: Record<string, string> }
 ) {
-  const { userId } = context.params;
+  const userId = params.userId;
 
   try {
     const session = await auth();
