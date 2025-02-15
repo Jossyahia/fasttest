@@ -10,7 +10,6 @@ import { getProducts } from "@/lib/api/products";
 import {
   Product,
   ProductFilters,
-  ProductsResponse,
   SortOption,
   PaginationInfo,
 } from "@/types/product";
@@ -34,12 +33,12 @@ export default function ProductList() {
 
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setFilters(newFilters);
-    setPage(1); // Reset to first page when filters change
+    setPage(1);
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSort(newSort);
-    setPage(1); // Reset to first page when sort changes
+    setPage(1);
   }, []);
 
   const fetchProducts = useCallback(async () => {
