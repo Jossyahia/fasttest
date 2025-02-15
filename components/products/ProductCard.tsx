@@ -16,16 +16,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "react-hot-toast";
 
-// Define the Product type and InventoryStatus enum locally based on your Prisma model
+// Updated Product interface with all required properties
 export interface Product {
   id: string;
   name: string;
   sku: string;
-  description?: string | null;
+  description: string | null;
   quantity: number;
   minStock: number;
-  location?: string | null;
+  location: string | null;
   status: InventoryStatus;
+  // Added missing properties
+  createdAt: Date;
+  updatedAt: Date;
+  organizationId: string;
+  warehouseId: string;
 }
 
 export enum InventoryStatus {

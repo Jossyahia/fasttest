@@ -73,14 +73,13 @@
 
 // // Include type for related data
 // export type ProductInclude = Prisma.ProductInclude;
+import { Prisma, InventoryStatus } from "@prisma/client";
 
-import { Prisma } from "@prisma/client";
-
-// Re-export the InventoryStatus type from your Prisma schema
-export type InventoryStatus = Prisma.ProductScalarFieldEnum["status"];
+// Export the InventoryStatus enum for use in other files
+export { InventoryStatus };
 
 // Base Product type from Prisma with additional fields
-export type Product = Prisma.Product & {
+export type Product = Prisma.ProductGetPayload<{}> & {
   warehouse?: {
     id: string;
     name: string;

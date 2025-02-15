@@ -5,7 +5,9 @@ import type {
   ProductFormData,
   ProductsResponse,
   InventoryStatus,
+  Product,
 } from "@/types/product";
+import { Prisma } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,32 +125,40 @@ export async function GET(request: NextRequest) {
     const warehouseId = searchParams.get("warehouseId") || undefined;
     const lowStock = searchParams.get("lowStock") === "true";
 
-    // Define where conditions using Prisma's generated types
-    const where = {
+    // Build the where condition properly
+    const whereCondition: Prisma.ProductWhereInput = {
       organizationId: session.user.organizationId,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { sku: { contains: search, mode: "insensitive" } },
-        ],
-      }),
-      ...(status && { status }),
-      ...(warehouseId && { warehouseId }),
-      ...(lowStock && {
-        quantity: {
-          lte: 10,
-        },
-      }),
-    } as const;
+    };
+
+    if (search) {
+      whereCondition.OR = [
+        { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+        { sku: { contains: search, mode: Prisma.QueryMode.insensitive } },
+      ];
+    }
+
+    if (status) {
+      whereCondition.status = status;
+    }
+
+    if (warehouseId) {
+      whereCondition.warehouseId = warehouseId;
+    }
+
+    if (lowStock) {
+      whereCondition.quantity = {
+        lte: 10,
+      };
+    }
 
     // Create dynamic orderBy object
-    const orderBy = {
+    const orderBy: Prisma.ProductOrderByWithRelationInput = {
       [sortField]: sortOrder,
-    } as const;
+    };
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where,
+        where: whereCondition,
         skip: (page - 1) * limit,
         take: limit,
         include: {
@@ -160,11 +170,27 @@ export async function GET(request: NextRequest) {
         },
         orderBy,
       }),
-      prisma.product.count({ where }),
+      prisma.product.count({ where: whereCondition }),
     ]);
 
+    // Transform products to match the expected interface
+    const transformedProducts: Product[] = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      description: p.description,
+      quantity: p.quantity,
+      minStock: p.minStock,
+      status: p.status,
+      location: p.location,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      organizationId: p.organizationId,
+      warehouseId: p.warehouseId,
+    }));
+
     const response: ProductsResponse = {
-      products,
+      products: transformedProducts,
       pagination: {
         total,
         pages: Math.ceil(total / limit),

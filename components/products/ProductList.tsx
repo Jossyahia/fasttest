@@ -14,6 +14,23 @@ import {
   PaginationInfo,
 } from "@/types/product";
 
+// Import the InventoryStatus enum from ProductCard
+import { InventoryStatus } from "./ProductCard";
+
+// Create a type that matches what ProductCard expects
+type ProductCardType = Omit<Product, "status"> & {
+  status: InventoryStatus;
+};
+
+// Create a type converter function
+function convertToProductCardType(product: Product): ProductCardType {
+  // Convert the status to the expected enum type
+  return {
+    ...product,
+    status: product.status as unknown as InventoryStatus,
+  };
+}
+
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +125,7 @@ export default function ProductList() {
           {products.map((product) => (
             <ProductCard
               key={product.id}
-              product={product}
+              product={convertToProductCardType(product)}
               onUpdate={fetchProducts}
             />
           ))}

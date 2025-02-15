@@ -24,8 +24,11 @@ interface ProductTableProps {
   onEdit: (product: Product) => void;
 }
 
-const getStatusStyle = (status: Product["status"]) => {
-  const styles = {
+// Fix: Define a specific type for status to ensure type safety
+type ProductStatus = "ACTIVE" | "INACTIVE" | "DISCONTINUED";
+
+const getStatusStyle = (status: ProductStatus) => {
+  const styles: Record<ProductStatus, string> = {
     ACTIVE: "bg-green-100 text-green-800",
     INACTIVE: "bg-yellow-100 text-yellow-800",
     DISCONTINUED: "bg-red-100 text-red-800",
@@ -78,7 +81,7 @@ export default function ProductTable({
               <TableCell>
                 <Badge
                   variant="secondary"
-                  className={getStatusStyle(product.status)}
+                  className={getStatusStyle(product.status as ProductStatus)}
                 >
                   {product.status}
                 </Badge>
