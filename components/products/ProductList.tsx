@@ -7,98 +7,52 @@ import ProductCard from "./ProductCard";
 import ProductHeader from "./ProductHeader";
 import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
-import type { ProductFilters, SortOption } from "@/types/product";
-import type { Product as ProductCardType } from "./ProductCard";
-
-// Define the inventory status type
-type InventoryStatus = ProductCardType["status"];
-
-// Complete API Product type with all required fields
-interface ApiProduct {
-  id: string;
-  name: string;
-  sku: string;
-  quantity: number;
-  minStock: number;
-  status: string; // API returns status as string
-  // Add any additional fields that might come from the API
-  createdAt?: string;
-  updatedAt?: string;
-  price?: number;
-  description?: string;
-}
-
-interface ProductsResponse {
-  products: ApiProduct[];
-  pagination: {
-    pages: number;
-  };
-}
-
-interface GetProductsSortOption {
-  field: string;
-  direction: "asc" | "desc";
-}
-
-// Function to transform API product to ProductCard product
-const transformProduct = (apiProduct: ApiProduct): ProductCardType => {
-  return {
-    id: apiProduct.id,
-    name: apiProduct.name,
-    sku: apiProduct.sku,
-    quantity: apiProduct.quantity,
-    minStock: apiProduct.minStock,
-    status: apiProduct.status as InventoryStatus,
-    // Include any additional fields that ProductCardType requires
-    createdAt: apiProduct.createdAt,
-    updatedAt: apiProduct.updatedAt,
-    price: apiProduct.price,
-    description: apiProduct.description,
-  };
-};
+import {
+  Product,
+  ProductFilters,
+  ProductsResponse,
+  SortOption,
+  PaginationInfo,
+} from "@/types/product";
 
 export default function ProductList() {
-  const [products, setProducts] = useState<ProductCardType[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    pages: 1,
+    total: 0,
+    perPage: 10,
+  });
   const [filters, setFilters] = useState<ProductFilters>({});
-  const [sort, setSort] = useState<GetProductsSortOption>({
+  const [sort, setSort] = useState<SortOption>({
     field: "createdAt",
     direction: "desc",
   });
 
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setFilters(newFilters);
-    setPage(1);
+    setPage(1); // Reset to first page when filters change
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
-    setSort({
-      field: String(newSort.field),
-      direction: newSort.direction,
-    });
-    setPage(1);
+    setSort(newSort);
+    setPage(1); // Reset to first page when sort changes
   }, []);
 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = (await getProducts(
-        filters,
-        sort,
-        page
-      )) as ProductsResponse;
+      const response = await getProducts({ ...filters, page }, sort);
 
       if (!response || !response.products) {
         throw new Error("Invalid response format from API");
       }
 
-      // Transform API products to ProductCard products
-      const transformedProducts = response.products.map(transformProduct);
-      setProducts(transformedProducts);
-      setTotalPages(response.pagination.pages);
+      setProducts(response.products);
+      setPagination(response.pagination);
       setError(null);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -138,7 +92,7 @@ export default function ProductList() {
       <ProductFiltersBar
         filters={filters}
         onFilterChange={handleFilterChange}
-        sort={sort as SortOption}
+        sort={sort}
         onSortChange={handleSortChange}
       />
 
@@ -162,8 +116,8 @@ export default function ProductList() {
 
       {!loading && products.length > 0 && (
         <Pagination
-          page={page}
-          totalPages={totalPages}
+          currentPage={pagination.currentPage}
+          totalPages={pagination.pages}
           onPageChange={setPage}
         />
       )}
@@ -199,11 +153,11 @@ function ProductCardSkeleton() {
 }
 
 function Pagination({
-  page,
+  currentPage,
   totalPages,
   onPageChange,
 }: {
-  page: number;
+  currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }) {
@@ -211,18 +165,18 @@ function Pagination({
     <div className="flex items-center justify-between px-4 py-4 border-t">
       <Button
         variant="outline"
-        onClick={() => onPageChange(Math.max(1, page - 1))}
-        disabled={page <= 1}
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage <= 1}
       >
         Previous
       </Button>
       <span className="text-sm text-gray-700">
-        Page {Math.max(1, page)} of {Math.max(1, totalPages)}
+        Page {currentPage} of {totalPages}
       </span>
       <Button
         variant="outline"
-        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        disabled={page >= totalPages}
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage >= totalPages}
       >
         Next
       </Button>
