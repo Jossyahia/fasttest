@@ -10,11 +10,22 @@ import { getProducts } from "@/lib/api/products";
 import type { ProductFilters, SortOption } from "@/types/product";
 import type { Product as ProductCardType } from "./ProductCard";
 
-// Define the API response Product type
+// Define the inventory status type
+type InventoryStatus = ProductCardType["status"];
+
+// Complete API Product type with all required fields
 interface ApiProduct {
   id: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  minStock: number;
   status: string; // API returns status as string
-  // ... other product properties
+  // Add any additional fields that might come from the API
+  createdAt?: string;
+  updatedAt?: string;
+  price?: number;
+  description?: string;
 }
 
 interface ProductsResponse {
@@ -32,8 +43,17 @@ interface GetProductsSortOption {
 // Function to transform API product to ProductCard product
 const transformProduct = (apiProduct: ApiProduct): ProductCardType => {
   return {
-    ...apiProduct,
-    status: apiProduct.status as ProductCardType["status"], // Type assertion for status
+    id: apiProduct.id,
+    name: apiProduct.name,
+    sku: apiProduct.sku,
+    quantity: apiProduct.quantity,
+    minStock: apiProduct.minStock,
+    status: apiProduct.status as InventoryStatus,
+    // Include any additional fields that ProductCardType requires
+    createdAt: apiProduct.createdAt,
+    updatedAt: apiProduct.updatedAt,
+    price: apiProduct.price,
+    description: apiProduct.description,
   };
 };
 
