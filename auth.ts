@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/route.ts
 export const runtime = "nodejs";
 
 import NextAuth, { NextAuthConfig } from "next-auth";
@@ -8,7 +7,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-// Define the UserRole enum
+// Define the UserRole enum locally instead of importing it from "@prisma/client"
 export enum UserRole {
   ADMIN = "ADMIN",
   MANAGER = "MANAGER",
@@ -24,19 +23,7 @@ interface CredentialsType {
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma) as unknown as NextAuthConfig["adapter"],
-  debug: process.env.NODE_ENV === "development",
-  trustHost: true,
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-  },
+  debug: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -82,8 +69,8 @@ export const authConfig: NextAuthConfig = {
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
+          credentials.password as string,
+          user.password as string
         );
 
         if (!isPasswordValid) {
@@ -196,14 +183,13 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: "jwt" as const,
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET as string,
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-// Type definitions
 declare module "next-auth" {
   interface Session {
     user: {
