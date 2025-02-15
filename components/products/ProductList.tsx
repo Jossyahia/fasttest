@@ -44,7 +44,11 @@ export default function ProductList() {
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getProducts({ ...filters, page }, sort);
+      // Fix: Assert that sort.field is a string to match the expected type
+      const response = await getProducts(
+        { ...filters, page },
+        { field: sort.field as string, direction: sort.direction }
+      );
 
       if (!response || !response.products) {
         throw new Error("Invalid response format from API");
