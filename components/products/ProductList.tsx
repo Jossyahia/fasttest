@@ -8,22 +8,37 @@ import ProductHeader from "./ProductHeader";
 import ProductFiltersBar from "./ProductFiltersBar";
 import { getProducts } from "@/lib/api/products";
 import type { ProductFilters, SortOption } from "@/types/product";
-import type { Product } from "./ProductCard"; // Import Product type from ProductCard
+import type { Product as ProductCardType } from "./ProductCard";
+
+// Define the API response Product type
+interface ApiProduct {
+  id: string;
+  status: string; // API returns status as string
+  // ... other product properties
+}
+
+interface ProductsResponse {
+  products: ApiProduct[];
+  pagination: {
+    pages: number;
+  };
+}
 
 interface GetProductsSortOption {
   field: string;
   direction: "asc" | "desc";
 }
 
-interface ProductsResponse {
-  products: Product[];
-  pagination: {
-    pages: number;
+// Function to transform API product to ProductCard product
+const transformProduct = (apiProduct: ApiProduct): ProductCardType => {
+  return {
+    ...apiProduct,
+    status: apiProduct.status as ProductCardType["status"], // Type assertion for status
   };
-}
+};
 
 export default function ProductList() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductCardType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -36,7 +51,7 @@ export default function ProductList() {
 
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setFilters(newFilters);
-    setPage(1); // Reset to first page when filters change
+    setPage(1);
   }, []);
 
   const handleSortChange = useCallback((newSort: SortOption) => {
@@ -44,41 +59,39 @@ export default function ProductList() {
       field: String(newSort.field),
       direction: newSort.direction,
     });
-    setPage(1); // Reset to first page when sort changes
+    setPage(1);
   }, []);
 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      console.log("Fetching products with:", { filters, sort, page }); // Debug log
-
       const response = (await getProducts(
         filters,
         sort,
         page
       )) as ProductsResponse;
-      console.log("API Response:", response); // Debug log
 
       if (!response || !response.products) {
         throw new Error("Invalid response format from API");
       }
 
-      setProducts(response.products);
+      // Transform API products to ProductCard products
+      const transformedProducts = response.products.map(transformProduct);
+      setProducts(transformedProducts);
       setTotalPages(response.pagination.pages);
       setError(null);
     } catch (err) {
-      console.error("Error fetching products:", err); // Debug log
+      console.error("Error fetching products:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch products";
       setError(errorMessage);
       toast.error("Failed to load products");
-      setProducts([]); // Clear products on error
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   }, [page, filters, sort]);
 
-  // Initial fetch
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
