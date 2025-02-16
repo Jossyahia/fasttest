@@ -1,7 +1,6 @@
-// inventory-table.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
@@ -35,7 +34,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AlertCircle, MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { ProductDetailsDialog } from "./product-details-dialog";
 import { EditProductDialog } from "./edit-product-dialog";
 import { DeleteProductDialog } from "./delete-product-dialog";
@@ -84,8 +93,9 @@ export function InventoryTable() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  const [page] = useState(1);
+  const [page, setPage] = useState(1);
   const [limit] = useState(10);
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data, error, isLoading } = useQuery({
@@ -97,6 +107,7 @@ export function InventoryTable() {
       });
       if (search) searchParams.append("search", search);
       if (status && status !== "all") searchParams.append("status", status);
+
       const response = await fetch(`/api/inventory?${searchParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -106,6 +117,11 @@ export function InventoryTable() {
       return data as { products: Product[]; pagination: PaginationData };
     },
   });
+
+  // Reset page when search or status changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, status]);
 
   const deleteMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -219,23 +235,90 @@ export function InventoryTable() {
       }
     : null;
 
+  const pagination = data?.pagination;
+
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Inventory List</CardTitle>
-          <CardDescription>
-            Manage your products and stock levels efficiently
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+          <div>
+            <CardTitle>Inventory List</CardTitle>
+            <CardDescription className="mt-1">
+              Manage your products and stock levels efficiently
+            </CardDescription>
+          </div>
+          <div className="flex justify-end">
+            {pagination && (
+              <div className="text-sm text-muted-foreground">
+                {pagination.totalItems} total items
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between space-x-4 mb-4">
-            <Input
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-md"
-            />
+          {/* Mobile filter UI */}
+          <div className="flex md:hidden mb-4">
+            <div className="relative flex-1 mr-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 w-full"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setFilterMenuOpen(!filterMenuOpen)}
+              aria-expanded={filterMenuOpen}
+              className="relative"
+            >
+              <Filter className="h-4 w-4" />
+              {status && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full" />
+              )}
+            </Button>
+          </div>
+
+          {filterMenuOpen && (
+            <div className="mb-4 md:hidden">
+              <div className="p-2 border rounded-md bg-background">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={status || "all"}
+                    onValueChange={(value) => {
+                      setStatus(value === "all" ? null : value);
+                      setFilterMenuOpen(false);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Filter Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+                      <SelectItem value="LOW_STOCK">Low Stock</SelectItem>
+                      <SelectItem value="IN_STOCK">In Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop filter UI */}
+          <div className="hidden md:flex gap-4 mb-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
             <Select
               value={status || "all"}
               onValueChange={(value) =>
@@ -253,88 +336,163 @@ export function InventoryTable() {
               </SelectContent>
             </Select>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>(Warehouse) Location</TableHead>
-                <TableHead className="w-[70px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.products.map((product) => (
-                <TableRow
-                  key={product.id}
-                  className={cn("transition-colors", getRowClassName(product))}
+
+          {/* Responsive table */}
+          <div className="rounded-md border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table className="min-w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px] md:w-[120px]">
+                      SKU
+                    </TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden sm:table-cell w-[120px]">
+                      Status
+                    </TableHead>
+                    <TableHead className="w-[100px] md:w-[140px]">
+                      Quantity
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell min-w-[200px]">
+                      Location
+                    </TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data?.products.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        No products found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    data?.products.map((product) => (
+                      <TableRow
+                        key={product.id}
+                        className={cn(
+                          "transition-colors",
+                          getRowClassName(product)
+                        )}
+                      >
+                        <TableCell className="font-medium">
+                          {product.sku}
+                        </TableCell>
+                        <TableCell className="max-w-[180px] truncate">
+                          {product.name}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <StatusBadge
+                            quantity={product.quantity}
+                            minStock={product.minStock}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <QuantityIndicator
+                            quantity={product.quantity}
+                            minStock={product.minStock}
+                          />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-gray-400" />
+                            <span className="truncate">
+                              {product.warehouse?.name || "No warehouse"}
+                              {product.location && (
+                                <>
+                                  <span className="text-gray-400 mx-1">/</span>
+                                  {product.location}
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                aria-label="Open actions menu"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => handleViewDetails(product)}
+                                className="text-blue-600 focus:text-blue-600 focus:bg-blue-50"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(product)}
+                                className="text-green-600 focus:text-green-600 focus:bg-green-50"
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(product)}
+                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground hidden sm:block">
+                Showing {(pagination.currentPage - 1) * limit + 1} to{" "}
+                {Math.min(
+                  pagination.currentPage * limit,
+                  pagination.totalItems
+                )}{" "}
+                of {pagination.totalItems} items
+              </div>
+              <div className="flex items-center space-x-2 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((page) => Math.max(1, page - 1))}
+                  disabled={page === 1}
                 >
-                  <TableCell className="font-medium">{product.sku}</TableCell>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell>
-                    <StatusBadge
-                      quantity={product.quantity}
-                      minStock={product.minStock}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <QuantityIndicator
-                      quantity={product.quantity}
-                      minStock={product.minStock}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-gray-400" />
-                      {product.warehouse?.name || "No warehouse"}
-                      {product.location && (
-                        <>
-                          <span className="text-gray-400">/</span>
-                          {product.location}
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem
-                          onClick={() => handleViewDetails(product)}
-                          className="text-blue-600 focus:text-blue-600 focus:bg-blue-50"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleEdit(product)}
-                          className="text-green-600 focus:text-green-600 focus:bg-green-50"
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(product)}
-                          className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous page</span>
+                </Button>
+                <div className="text-sm font-medium">
+                  Page {pagination.currentPage} of {pagination.totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPage((page) => Math.min(pagination.totalPages, page + 1))
+                  }
+                  disabled={page === pagination.totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next page</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
+
       <ProductDetailsDialog
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
@@ -357,5 +515,11 @@ export function InventoryTable() {
         isLoading={deleteMutation.status === "pending"}
       />
     </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-sm font-medium text-foreground mb-1.5">{children}</div>
   );
 }

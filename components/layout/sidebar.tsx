@@ -10,7 +10,6 @@ import {
   Users,
   Settings,
   ChevronRight,
-  Menu,
   Store,
   ShoppingCart,
   Users2,
@@ -31,7 +30,7 @@ import { Button } from "@/components/ui/button";
 interface NavItemType {
   href: string;
   title: string;
-  icon: LucideIcon; // Updated to use LucideIcon type
+  icon: LucideIcon;
 }
 
 // Define the structure of a navigation group
@@ -44,12 +43,14 @@ interface NavGroupType {
 interface NavItemProps {
   item: NavItemType;
   isActive: boolean;
+  onClick?: () => void;
 }
 
 // Define the props for the NavGroup component
 interface NavGroupProps {
   group: NavGroupType;
   pathname: string;
+  onItemClick?: () => void;
 }
 
 // Navigation items data
@@ -117,7 +118,7 @@ const navigationItems: NavGroupType[] = [
 ];
 
 // NavItem Component
-function NavItem({ item, isActive }: NavItemProps) {
+function NavItem({ item, isActive, onClick }: NavItemProps) {
   return (
     <Link
       href={item.href}
@@ -128,6 +129,7 @@ function NavItem({ item, isActive }: NavItemProps) {
           ? "bg-gray-100 dark:bg-gray-800 text-primary font-medium"
           : "text-gray-700 dark:text-gray-300"
       )}
+      onClick={onClick}
     >
       <item.icon className="w-5 h-5 shrink-0" />
       <span className="text-sm">{item.title}</span>
@@ -137,7 +139,7 @@ function NavItem({ item, isActive }: NavItemProps) {
 }
 
 // NavGroup Component
-function NavGroup({ group, pathname }: NavGroupProps) {
+function NavGroup({ group, pathname, onItemClick }: NavGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
   const isActiveGroup = group.items.some((item) => pathname === item.href);
 
@@ -166,6 +168,7 @@ function NavGroup({ group, pathname }: NavGroupProps) {
               key={item.href}
               item={item}
               isActive={pathname === item.href}
+              onClick={onItemClick}
             />
           ))}
         </div>
@@ -177,11 +180,19 @@ function NavGroup({ group, pathname }: NavGroupProps) {
 // Sidebar Component
 export function Sidebar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const SidebarContent = () => (
+  const closeSheet = () => setIsOpen(false);
+
+  const SidebarContent = ({ onItemClick }: { onItemClick?: () => void }) => (
     <nav className="space-y-6">
       {navigationItems.map((group) => (
-        <NavGroup key={group.title} group={group} pathname={pathname} />
+        <NavGroup
+          key={group.title}
+          group={group}
+          pathname={pathname}
+          onItemClick={onItemClick}
+        />
       ))}
     </nav>
   );
@@ -191,27 +202,37 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r bg-white dark:bg-gray-950 min-h-screen p-4">
         <div className="mb-6 px-3">
-          <h2 className="text-lg font-semibold">FastIv Pro</h2>
+          <Link
+            href="/"
+            className="inline-block hover:text-primary transition-colors"
+          >
+            <h2 className="text-lg font-semibold">FastIv Pro</h2>
+          </Link>
         </div>
         <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar */}
-      <Sheet>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden fixed top-4 left-4 z-40"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+            onClick={() => setIsOpen(true)}
+          ></Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-4">
           <SheetHeader className="mb-6">
-            <SheetTitle>FastIv Pro</SheetTitle>
+            <Link
+              href="/"
+              className="inline-block hover:text-primary transition-colors"
+              onClick={closeSheet}
+            >
+              <SheetTitle>FastInv Pro</SheetTitle>
+            </Link>
           </SheetHeader>
-          <SidebarContent />
+          <SidebarContent onItemClick={closeSheet} />
         </SheetContent>
       </Sheet>
     </>

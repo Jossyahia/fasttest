@@ -2,15 +2,18 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -19,9 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 interface Product {
   id: string;
@@ -31,22 +31,18 @@ interface Product {
   quantity: number;
   minStock: number;
   location: string | null;
-  warehouse?: { name: string } | null;
-  createdAt: string;
-  updatedAt: string;
+  warehouse?: { name: string };
 }
 
-const productSchema = z.object({
-  sku: z.string().min(1, "SKU is required"),
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  quantity: z.number().min(0, "Quantity must be 0 or greater"),
-  minStock: z.number().min(0, "Minimum stock must be 0 or greater"),
-  location: z.string().optional(),
-  warehouse: z.string().optional(),
-});
-
-type EditProductFormData = z.infer<typeof productSchema>;
+type EditProductFormData = {
+  sku: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  minStock: number;
+  location?: string;
+  warehouse?: string;
+};
 
 interface EditProductDialogProps {
   open: boolean;
@@ -55,6 +51,17 @@ interface EditProductDialogProps {
   onSubmit: (data: EditProductFormData) => void;
   isLoading: boolean;
 }
+
+// Schema
+const productSchema = z.object({
+  sku: z.string().min(1, "SKU is required"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  quantity: z.coerce.number().min(0, "Quantity must be 0 or greater"),
+  minStock: z.coerce.number().min(0, "Minimum stock must be 0 or greater"),
+  location: z.string().optional(),
+  warehouse: z.string().optional(),
+});
 
 export function EditProductDialog({
   open,
@@ -66,13 +73,13 @@ export function EditProductDialog({
   const form = useForm<EditProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      sku: product?.sku || "",
-      name: product?.name || "",
-      description: product?.description || "",
-      quantity: product?.quantity || 0,
-      minStock: product?.minStock || 0,
-      location: product?.location || "",
-      warehouse: product?.warehouse?.name || "",
+      sku: "",
+      name: "",
+      description: "",
+      quantity: 0,
+      minStock: 0,
+      location: "",
+      warehouse: "",
     },
   });
 
@@ -85,32 +92,35 @@ export function EditProductDialog({
         quantity: product.quantity,
         minStock: product.minStock,
         location: product.location || "",
-        warehouse: product.warehouse?.name || "",
+        warehouse: product.warehouse ? product.warehouse.name : "",
       });
     }
   }, [product, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit Product</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto p-4 md:p-6">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-xl">Edit Product</DialogTitle>
+          <DialogDescription className="text-sm">
             Update the product information below
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-2"
+          >
             <FormField
               control={form.control}
               name="sku"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>SKU</FormLabel>
+                  <FormLabel className="text-sm font-medium">SKU</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="w-full" />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -119,96 +129,111 @@ export function EditProductDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel className="text-sm font-medium">Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="w-full" />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="minStock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Stock</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="warehouse"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Warehouse Location</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Warehouse Name" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      Quantity
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} className="w-full" />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="minStock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      Minimum Stock
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} className="w-full" />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <FormField
+                control={form.control}
+                name="warehouse"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      Warehouse
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} className="w-full" />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      Location
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} className="w-full" />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel className="text-sm font-medium">
+                    Description
+                  </FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea
+                      {...field}
+                      className="min-h-[80px] md:min-h-[100px] w-full"
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
-            <DialogFooter>
+            <DialogFooter className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isLoading}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full sm:w-auto"
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
