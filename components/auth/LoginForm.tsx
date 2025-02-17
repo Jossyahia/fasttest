@@ -75,7 +75,7 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       {showRegisteredMessage && (
-        <Alert variant="success">
+        <Alert className="border-green-500 bg-green-50 text-green-800">
           <AlertDescription>
             Account created successfully! Please sign in.
           </AlertDescription>

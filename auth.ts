@@ -23,7 +23,7 @@ interface CredentialsType {
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma) as unknown as NextAuthConfig["adapter"],
-  debug: true,
+  debug: false,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
