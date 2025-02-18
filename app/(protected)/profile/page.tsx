@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 interface Settings {
   id: string;
@@ -39,12 +39,8 @@ export default function SettingsPage() {
         const data = await response.json();
         setSettings(data);
       } catch (error) {
-        console.error("Failed to update notification settings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load settings",
-          variant: "destructive",
-        });
+        console.error("Failed to fetch settings:", error);
+        toast.error("Failed to load settings");
       } finally {
         setIsLoading(false);
       }
@@ -80,17 +76,10 @@ export default function SettingsPage() {
 
       const updatedSettings = await response.json();
       setSettings(updatedSettings);
-      toast({
-        title: "Success",
-        description: "Settings updated successfully",
-      });
+      toast.success("Settings updated successfully");
     } catch (error) {
-      console.error("Failed to update notification settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update settings",
-        variant: "destructive",
-      });
+      console.error("Failed to update settings:", error);
+      toast.error("Failed to update settings");
     } finally {
       setIsSaving(false);
     }

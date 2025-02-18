@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 interface Settings {
   id: string;
@@ -23,7 +23,8 @@ interface Settings {
   metadata: Record<string, unknown>;
 }
 
-const currencies = ["NGN", "USD", "EUR", "GBP"];
+const CURRENCIES = ["NGN", "USD", "EUR", "GBP"] as const;
+type Currency = (typeof CURRENCIES)[number];
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -32,25 +33,23 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    async function fetchSettings() {
+    const fetchSettings = async () => {
       if (!session) return;
 
       try {
         const response = await fetch("/api/settings");
-        if (!response.ok) throw new Error("Failed to fetch settings");
+        if (!response.ok) {
+          throw new Error("Failed to fetch settings");
+        }
         const data: Settings = await response.json();
         setSettings(data);
       } catch (error) {
         console.error("Error fetching settings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load settings",
-          variant: "destructive",
-        });
+        toast.error("Failed to load settings");
       } finally {
         setIsLoading(false);
       }
-    }
+    };
 
     fetchSettings();
   }, [session]);
@@ -65,7 +64,7 @@ export default function SettingsPage() {
         lowStockThreshold: parseInt(
           formData.get("lowStockThreshold") as string
         ),
-        currency: formData.get("currency") as string,
+        currency: formData.get("currency") as Currency,
         notificationEmail: formData.get("notificationEmail") as string,
         metadata: settings?.metadata,
       };
@@ -76,21 +75,16 @@ export default function SettingsPage() {
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) throw new Error("Failed to update settings");
+      if (!response.ok) {
+        throw new Error("Failed to update settings");
+      }
 
       const updatedSettings: Settings = await response.json();
       setSettings(updatedSettings);
-      toast({
-        title: "Success",
-        description: "Settings updated successfully",
-      });
+      toast.success("Settings updated successfully");
     } catch (error) {
       console.error("Error updating settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update settings",
-        variant: "destructive",
-      });
+      toast.error("Failed to update settings");
     } finally {
       setIsSaving(false);
     }
@@ -98,14 +92,14 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-xl">Loading settings...</div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-2xl py-10 px-4">
+    <div className="container mx-auto max-w-2xl px-4 py-10">
       <Card>
         <CardHeader className="flex flex-row items-center space-x-4 pb-4">
           <SettingsIcon className="h-8 w-8 text-muted-foreground" />
@@ -123,6 +117,7 @@ export default function SettingsPage() {
                 defaultValue={settings?.lowStockThreshold}
                 min={1}
                 required
+                className="w-full"
               />
               <p className="text-sm text-muted-foreground">
                 Receive alerts when product quantity falls below this number
@@ -132,11 +127,11 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Currency</label>
               <Select name="currency" defaultValue={settings?.currency}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencies.map((currency) => (
+                  {CURRENCIES.map((currency) => (
                     <SelectItem key={currency} value={currency}>
                       {currency}
                     </SelectItem>
@@ -152,6 +147,7 @@ export default function SettingsPage() {
                 type="email"
                 defaultValue={settings?.notificationEmail || ""}
                 placeholder="notifications@example.com"
+                className="w-full"
               />
               <p className="text-sm text-muted-foreground">
                 Email address for system notifications and alerts
@@ -165,9 +161,9 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving} className="w-full">
               {isSaving ? (
-                <>Saving...</>
+                "Saving..."
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
