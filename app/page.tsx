@@ -190,28 +190,32 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-background/50 to-background">
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="container px-4 py-24 md:py-32 mx-auto">
-          <div className="max-w-3xl mx-auto text-center space-y-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight animate-fade-up">
+        {/* Hero Section - Updated padding and text sizes */}
+        <section className="container px-4 py-12 md:py-24 lg:py-32 mx-auto">
+          <div className="max-w-3xl mx-auto text-center space-y-6 md:space-y-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight animate-fade-up">
               Inventory management,&nbsp;
               <span className="inline-flex bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
                 simplified
               </span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed px-4">
               Track, manage, and optimize your inventory with powerful
               automation and real-time insights.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button size="lg" className="group">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
+              <Link href="/register" className="w-full sm:w-auto">
+                <Button size="lg" className="group w-full sm:w-auto">
                   Start free trial
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="/">
-                <Button size="lg" variant="outline">
+              <Link href="/" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
                   View demo
                 </Button>
               </Link>
@@ -219,19 +223,24 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="container px-4 py-24 mx-auto">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Features Section - Updated grid layout */}
+        <section
+          id="features"
+          className="container px-4 py-12 md:py-24 mx-auto"
+        >
+          <div className="grid gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <FeatureCard key={feature.title} feature={feature} />
             ))}
           </div>
         </section>
 
-        {/* Pricing Section */}
-        <section id="pricing" className="container px-4 py-24 mx-auto">
-          <div className="max-w-xl mx-auto text-center mb-12 space-y-4">
-            <h2 className="text-3xl font-bold">Simple, transparent pricing</h2>
+        {/* Pricing Section - Updated layout and spacing */}
+        <section id="pricing" className="container px-4 py-12 md:py-24 mx-auto">
+          <div className="max-w-xl mx-auto text-center mb-8 md:mb-12 space-y-4">
+            <h2 className="text-2xl md:text-3xl font-bold px-4">
+              Simple, transparent pricing
+            </h2>
             <Tabs
               defaultValue="monthly"
               onValueChange={(value) =>
@@ -239,14 +248,14 @@ export default function LandingPage() {
               }
               className="inline-flex"
             >
-              <TabsList>
+              <TabsList className="grid w-full grid-cols-2 sm:w-auto">
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly (-20%)</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto px-4">
             {plans.map((plan) => (
               <PricingCard
                 key={plan.id}
@@ -258,10 +267,11 @@ export default function LandingPage() {
         </section>
       </main>
 
+      {/* Footer - Updated padding and alignment */}
       <footer className="border-t bg-background/50 backdrop-blur-sm">
-        <div className="container px-4 py-8 mx-auto">
+        <div className="container px-4 py-6 md:py-8 mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-center sm:text-left">
               © 2025 FastIv Pro. All rights reserved.
             </p>
           </div>
