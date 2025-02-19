@@ -130,6 +130,7 @@ model Organization {
   customers     Customer[]
   products      Product[]
   warehouses    Warehouse[]
+  vendors       Vendor[]
   orders        Order[]
 
   @@index([name])
@@ -169,15 +170,32 @@ model Product {
   organizationId String
   warehouse     Warehouse        @relation(fields: [warehouseId], references: [id])
   warehouseId   String
+  vendor        Vendor           @relation(fields: [vendorId], references: [id])
+  vendorId      String
   orderItems    OrderItem[]
   movements     InventoryMovement[]
 
   @@index([sku])
   @@index([organizationId])
   @@index([warehouseId])
+  @@index([vendorId])
 }
 
 model Warehouse {
+  id            String        @id @default(cuid())
+  name          String
+  location      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String
+  products      Product[]
+
+  @@index([organizationId])
+}
+
+model Vendor {
   id            String        @id @default(cuid())
   name          String
   location      String?
@@ -198,8 +216,8 @@ model Order {
   paymentStatus PaymentStatus @default(PENDING)
   paymentType   PaymentType   @default(PREPAID)
   total         Float
-  shippingAddress String?     // Added this field
-  notes         String?       // Added this field
+  shippingAddress String?
+  notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

@@ -1,4 +1,4 @@
-// app/warehouses/page.tsx
+// app/warehouses/page.tsx(For Vendor)
 import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -18,7 +18,8 @@ export default async function WarehousesPage() {
   return (
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Warehouses</h1>
+        <h1 className="text-3xl font-bold">Vendors</h1>
+        {/* CreateWarehouseButton is a button that opens a modal to create a new Vendor */}
         <CreateWarehouseButton />
       </div>
       <Suspense fallback={<div>Loading...</div>}>
