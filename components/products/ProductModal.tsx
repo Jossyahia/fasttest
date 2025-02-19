@@ -5,6 +5,7 @@ import { Product, InventoryStatus } from "@prisma/client";
 import { createProduct, updateProduct } from "@/lib/api/products";
 import { toast } from "react-hot-toast";
 import { useWarehouses } from "@/hooks/useWarehouses";
+import { useVendors } from "@/hooks/useVendors";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export default function ProductModal({
   onUpdate,
 }: ProductModalProps) {
   const { warehouses, isLoading: warehousesLoading } = useWarehouses();
+  const { vendors, isLoading: vendorsLoading } = useVendors();
+
   const [formData, setFormData] = useState({
     sku: product?.sku || "",
     name: product?.name || "",
@@ -29,12 +32,14 @@ export default function ProductModal({
     status: product?.status || InventoryStatus.ACTIVE,
     location: product?.location || "",
     warehouseId: product?.warehouseId || "",
+    vendorId: product?.vendorId || "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [initialWarehouseSet, setInitialWarehouseSet] = useState(false);
+  const [initialVendorSet, setInitialVendorSet] = useState(false);
 
   useEffect(() => {
     if (warehouses.length > 0 && !initialWarehouseSet) {
@@ -45,6 +50,17 @@ export default function ProductModal({
       setInitialWarehouseSet(true);
     }
   }, [warehouses, product, initialWarehouseSet]);
+
+  useEffect(() => {
+    if (vendors.length > 0 && !initialVendorSet) {
+      setFormData((prev) => ({
+        ...prev,
+        vendorId: product?.vendorId || vendors[0].id,
+      }));
+      setInitialVendorSet(true);
+    }
+  }, [vendors, product, initialVendorSet]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -54,12 +70,16 @@ export default function ProductModal({
       if (!formData.warehouseId) {
         throw new Error("Please select a warehouse");
       }
+      if (!formData.vendorId) {
+        throw new Error("Please select a vendor");
+      }
 
       const payload = {
         sku: formData.sku.trim(),
         name: formData.name.trim(),
         description: formData.description.trim(),
         warehouseId: formData.warehouseId,
+        vendorId: formData.vendorId,
         quantity: Number(formData.quantity),
         minStock: Number(formData.minStock),
         status: formData.status as InventoryStatus,
@@ -156,26 +176,56 @@ export default function ProductModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Status
+                Vendor*
               </label>
               <select
-                value={formData.status}
+                value={formData.vendorId}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    status: e.target.value as InventoryStatus,
+                    vendorId: e.target.value,
                   }))
                 }
                 className="mt-1 block w-full rounded-md border border-gray-300 p-2"
                 required
+                disabled={vendorsLoading}
               >
-                {Object.values(InventoryStatus).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
+                <option value="">Select Vendor</option>
+                {vendors.map((vendor) => (
+                  <option key={vendor.id} value={vendor.id}>
+                    {vendor.name}
                   </option>
                 ))}
               </select>
+              {!vendorsLoading && vendors.length === 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  No vendors available. Please create a vendor first.
+                </p>
+              )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Status
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  status: e.target.value as InventoryStatus,
+                }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+              required
+            >
+              {Object.values(InventoryStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -300,8 +350,11 @@ export default function ProductModal({
               disabled={
                 loading ||
                 warehousesLoading ||
+                vendorsLoading ||
                 warehouses.length === 0 ||
-                !formData.warehouseId
+                vendors.length === 0 ||
+                !formData.warehouseId ||
+                !formData.vendorId
               }
             >
               {loading ? "Saving..." : product ? "Update" : "Create"}

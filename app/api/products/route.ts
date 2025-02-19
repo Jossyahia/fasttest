@@ -31,6 +31,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!body.vendorId) {
+      return NextResponse.json(
+        { error: "Vendor is required" },
+        { status: 400 }
+      );
+    }
 
     // Validate warehouse exists and belongs to organization
     const warehouse = await prisma.warehouse.findFirst({
@@ -43,6 +49,21 @@ export async function POST(request: NextRequest) {
     if (!warehouse) {
       return NextResponse.json(
         { error: "Invalid warehouse selected" },
+        { status: 400 }
+      );
+    }
+
+    // Validate vendor exists and belongs to organization
+    const vendor = await prisma.vendor.findFirst({
+      where: {
+        id: body.vendorId,
+        organizationId: session.user.organizationId,
+      },
+    });
+
+    if (!vendor) {
+      return NextResponse.json(
+        { error: "Invalid vendor selected" },
         { status: 400 }
       );
     }
@@ -69,6 +90,7 @@ export async function POST(request: NextRequest) {
         description: body.description?.trim() || "",
         organizationId: session.user.organizationId,
         warehouseId: body.warehouseId,
+        vendorId: body.vendorId,
         quantity: Number(body.quantity) || 0,
         minStock: Number(body.minStock) || 1,
         status: body.status || "ACTIVE",
@@ -76,6 +98,11 @@ export async function POST(request: NextRequest) {
       },
       include: {
         warehouse: {
+          select: {
+            name: true,
+          },
+        },
+        vendor: {
           select: {
             name: true,
           },
@@ -113,19 +140,16 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.max(1, Number(searchParams.get("limit")) || 6);
     const search = searchParams.get("search") || undefined;
-
-    // Add sorting parameters
     const sortField = searchParams.get("sortField") || "createdAt";
     const sortOrder = (searchParams.get("sortOrder") || "desc") as
       | "asc"
       | "desc";
-
     const statusParam = searchParams.get("status") as InventoryStatus | null;
     const status = statusParam || undefined;
     const warehouseId = searchParams.get("warehouseId") || undefined;
+    const vendorId = searchParams.get("vendorId") || undefined;
     const lowStock = searchParams.get("lowStock") === "true";
 
-    // Build the where condition properly
     const whereCondition: Prisma.ProductWhereInput = {
       organizationId: session.user.organizationId,
     };
@@ -145,13 +169,16 @@ export async function GET(request: NextRequest) {
       whereCondition.warehouseId = warehouseId;
     }
 
+    if (vendorId) {
+      whereCondition.vendorId = vendorId;
+    }
+
     if (lowStock) {
       whereCondition.quantity = {
         lte: 10,
       };
     }
 
-    // Create dynamic orderBy object
     const orderBy: Prisma.ProductOrderByWithRelationInput = {
       [sortField]: sortOrder,
     };
@@ -167,13 +194,17 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
+          vendor: {
+            select: {
+              name: true,
+            },
+          },
         },
         orderBy,
       }),
       prisma.product.count({ where: whereCondition }),
     ]);
 
-    // Transform products to match the expected interface
     const transformedProducts: Product[] = products.map((p) => ({
       id: p.id,
       name: p.name,
@@ -187,6 +218,9 @@ export async function GET(request: NextRequest) {
       updatedAt: p.updatedAt,
       organizationId: p.organizationId,
       warehouseId: p.warehouseId,
+      vendorId: p.vendorId,
+      warehouseName: p.warehouse.name,
+      vendorName: p.vendor.name,
     }));
 
     const response: ProductsResponse = {

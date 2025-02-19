@@ -160,6 +160,15 @@ export async function POST(request: NextRequest) {
           },
         });
 
+        // 5.5 Create default vendor
+        const vendor = await tx.vendor.create({
+          data: {
+            name: "Default Vendor",
+            location: "Default Location",
+            organizationId: organization.id,
+          },
+        });
+
         // 6. Create default product
         await tx.product.create({
           data: {
@@ -171,6 +180,7 @@ export async function POST(request: NextRequest) {
             status: "ACTIVE",
             organizationId: organization.id,
             warehouseId: warehouse.id,
+            vendorId: vendor.id, // Add the vendor ID here
           },
         });
 

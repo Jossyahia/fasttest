@@ -26,11 +26,11 @@ export interface Product {
   minStock: number;
   location: string | null;
   status: InventoryStatus;
-  // Added missing properties
   createdAt: Date;
   updatedAt: Date;
   organizationId: string;
   warehouseId: string;
+  vendorId: string; // Added missing property
 }
 
 export enum InventoryStatus {
