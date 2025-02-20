@@ -5,8 +5,8 @@ import debounce from "lodash/debounce";
 // Define the InventoryStatus enum locally based on your Prisma model
 export enum InventoryStatus {
   ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  DISCONTINUED = "DISCONTINUED",
+  SOLD = "SOLD",
+  RETURNED = "RETURNED",
 }
 
 interface Warehouse {

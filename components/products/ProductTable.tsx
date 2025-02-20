@@ -25,13 +25,13 @@ interface ProductTableProps {
 }
 
 // Fix: Define a specific type for status to ensure type safety
-type ProductStatus = "ACTIVE" | "INACTIVE" | "DISCONTINUED";
+type ProductStatus = "ACTIVE" | "SOLD" | "RETURNED";
 
 const getStatusStyle = (status: ProductStatus) => {
   const styles: Record<ProductStatus, string> = {
     ACTIVE: "bg-green-100 text-green-800",
-    INACTIVE: "bg-yellow-100 text-yellow-800",
-    DISCONTINUED: "bg-red-100 text-red-800",
+    SOLD: "bg-yellow-100 text-yellow-800",
+    RETURNED: "bg-red-100 text-red-800",
   };
   return styles[status] || "";
 };

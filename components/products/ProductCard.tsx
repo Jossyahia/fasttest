@@ -35,8 +35,8 @@ export interface Product {
 
 export enum InventoryStatus {
   ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  DISCONTINUED = "DISCONTINUED",
+  SOLD = "SOLD",
+  RETURNED = "RETURNED",
 }
 
 interface ProductCardProps {
@@ -52,8 +52,8 @@ export default function ProductCard({ product, onUpdate }: ProductCardProps) {
   const getStatusColor = (status: InventoryStatus) => {
     const styles: Record<InventoryStatus, string> = {
       [InventoryStatus.ACTIVE]: "bg-green-100 text-green-800",
-      [InventoryStatus.INACTIVE]: "bg-gray-100 text-gray-800",
-      [InventoryStatus.DISCONTINUED]: "bg-red-100 text-red-800",
+      [InventoryStatus.SOLD]: "bg-gray-100 text-gray-800",
+      [InventoryStatus.RETURNED]: "bg-red-100 text-red-800",
     };
     return styles[status] || "bg-gray-100 text-gray-800";
   };

@@ -45,8 +45,8 @@ enum PaymentType {
 
 enum InventoryStatus {
   ACTIVE
-  INACTIVE
-  DISCONTINUED
+  SOLD
+  RETURNED
 }
 
 enum MovementType {

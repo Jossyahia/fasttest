@@ -153,7 +153,7 @@ export default function VendorDetailClient({
                             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                               product.status === "ACTIVE"
                                 ? "bg-green-50 text-green-700"
-                                : product.status === "INACTIVE"
+                                : product.status === "SOLD"
                                 ? "bg-orange-50 text-orange-700"
                                 : "bg-gray-50 text-gray-700"
                             }`}
