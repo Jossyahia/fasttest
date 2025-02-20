@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { UserNav } from "./user-nav";
 import NotificationsComponent from "@/components/notifications/NotificationsComponent";
@@ -59,6 +60,46 @@ const NotificationsDropdown = () => {
         </div>
         <DropdownMenuSeparator />
         <NotificationsComponent />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+// Navigation links dropdown for mobile
+const NavLinksDropdown = () => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 md:hidden">
+          Navigate
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px]">
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="w-full cursor-pointer">
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/inventory" className="w-full cursor-pointer">
+            Inventory
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/vendors" className="w-full cursor-pointer">
+            Vendors
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/warehouse" className="w-full cursor-pointer">
+            Warehouse
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/reports" className="w-full cursor-pointer">
+            Reports
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -125,15 +166,28 @@ export function TopNav({ onMobileMenuClick }: TopNavProps) {
               Inventory
             </Link>
             <Link
-              href="/reports"
+              href="/vendors"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Vendors
+            </Link>
+            <Link
+              href="/warehouses"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Warehouses
+            </Link>
+            <Link
+              href="/"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
               Reports
             </Link>
           </nav>
 
-          {/* Right side - notifications and user */}
+          {/* Right side - mobile nav dropdown, notifications and user */}
           <div className="flex items-center gap-2">
+            <NavLinksDropdown />
             <NotificationsDropdown />
             <UserNav user={session?.user} />
           </div>

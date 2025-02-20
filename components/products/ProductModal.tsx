@@ -108,9 +108,9 @@ export default function ProductModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-lg">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center z-10">
           <h2 className="text-xl font-bold">
             {product ? "Edit Product" : "Add Product"}
           </h2>
@@ -118,6 +118,7 @@ export default function ProductModal({
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             type="button"
+            aria-label="Close"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -136,231 +137,233 @@ export default function ProductModal({
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-md mb-4">
-            {error}
-          </div>
-        )}
+        <div className="p-4">
+          {error && (
+            <div className="bg-red-50 text-red-500 p-3 rounded-md mb-4">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Warehouse*
+                </label>
+                <select
+                  value={formData.warehouseId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      warehouseId: e.target.value,
+                    }))
+                  }
+                  className="block w-full rounded-md border border-gray-300 p-2"
+                  required
+                  disabled={warehousesLoading}
+                >
+                  <option value="">Select Warehouse</option>
+                  {warehouses.map((warehouse) => (
+                    <option key={warehouse.id} value={warehouse.id}>
+                      {warehouse.name}
+                    </option>
+                  ))}
+                </select>
+                {!warehousesLoading && warehouses.length === 0 && (
+                  <p className="text-red-500 text-sm mt-1">
+                    No warehouses available. Please create a warehouse first.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Vendor*
+                </label>
+                <select
+                  value={formData.vendorId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      vendorId: e.target.value,
+                    }))
+                  }
+                  className="block w-full rounded-md border border-gray-300 p-2"
+                  required
+                  disabled={vendorsLoading}
+                >
+                  <option value="">Select Vendor</option>
+                  {vendors.map((vendor) => (
+                    <option key={vendor.id} value={vendor.id}>
+                      {vendor.name}
+                    </option>
+                  ))}
+                </select>
+                {!vendorsLoading && vendors.length === 0 && (
+                  <p className="text-red-500 text-sm mt-1">
+                    No vendors available. Please create a vendor first.
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Warehouse*
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
               </label>
               <select
-                value={formData.warehouseId}
+                value={formData.status}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    warehouseId: e.target.value,
+                    status: e.target.value as InventoryStatus,
                   }))
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                className="block w-full rounded-md border border-gray-300 p-2"
                 required
-                disabled={warehousesLoading}
               >
-                <option value="">Select Warehouse</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.id} value={warehouse.id}>
-                    {warehouse.name}
+                {Object.values(InventoryStatus).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
                   </option>
                 ))}
               </select>
-              {!warehousesLoading && warehouses.length === 0 && (
-                <p className="text-red-500 text-sm mt-1">
-                  No warehouses available. Please create a warehouse first.
-                </p>
-              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  SKU*
+                </label>
+                <input
+                  type="text"
+                  value={formData.sku}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, sku: e.target.value }))
+                  }
+                  className="block w-full rounded-md border border-gray-300 p-2"
+                  required
+                  placeholder="Enter SKU"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name*
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  className="block w-full rounded-md border border-gray-300 p-2"
+                  required
+                  placeholder="Enter product name"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Vendor*
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
               </label>
-              <select
-                value={formData.vendorId}
+              <textarea
+                value={formData.description}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    vendorId: e.target.value,
+                    description: e.target.value,
                   }))
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                required
-                disabled={vendorsLoading}
+                className="block w-full rounded-md border border-gray-300 p-2"
+                rows={3}
+                placeholder="Enter product description"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Quantity*
+                </label>
+                <input
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quantity: Math.max(0, parseInt(e.target.value) || 0),
+                    }))
+                  }
+                  className="block w-full rounded-md border border-gray-300 p-2"
+                  min="0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Min Stock*
+                </label>
+                <input
+                  type="number"
+                  value={formData.minStock}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      minStock: Math.max(0, parseInt(e.target.value) || 0),
+                    }))
+                  }
+                  className="block w-full rounded-md border border-gray-300 p-2"
+                  min="0"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, location: e.target.value }))
+                }
+                className="block w-full rounded-md border border-gray-300 p-2"
+                placeholder="Enter storage location"
+              />
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2 pt-4 border-t mt-6">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50 mt-2 sm:mt-0 w-full sm:w-auto"
+                disabled={loading}
               >
-                <option value="">Select Vendor</option>
-                {vendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.name}
-                  </option>
-                ))}
-              </select>
-              {!vendorsLoading && vendors.length === 0 && (
-                <p className="text-red-500 text-sm mt-1">
-                  No vendors available. Please create a vendor first.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  status: e.target.value as InventoryStatus,
-                }))
-              }
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              required
-            >
-              {Object.values(InventoryStatus).map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                SKU*
-              </label>
-              <input
-                type="text"
-                value={formData.sku}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, sku: e.target.value }))
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
+                disabled={
+                  loading ||
+                  warehousesLoading ||
+                  vendorsLoading ||
+                  warehouses.length === 0 ||
+                  vendors.length === 0 ||
+                  !formData.warehouseId ||
+                  !formData.vendorId
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                required
-                placeholder="Enter SKU"
-              />
+              >
+                {loading ? "Saving..." : product ? "Update" : "Create"}
+              </button>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Name*
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                required
-                placeholder="Enter product name"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              rows={3}
-              placeholder="Enter product description"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Quantity*
-              </label>
-              <input
-                type="number"
-                value={formData.quantity}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    quantity: Math.max(0, parseInt(e.target.value) || 0),
-                  }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                min="0"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Min Stock*
-              </label>
-              <input
-                type="number"
-                value={formData.minStock}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    minStock: Math.max(0, parseInt(e.target.value) || 0),
-                  }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                min="0"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Location
-            </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, location: e.target.value }))
-              }
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              placeholder="Enter storage location"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              disabled={
-                loading ||
-                warehousesLoading ||
-                vendorsLoading ||
-                warehouses.length === 0 ||
-                vendors.length === 0 ||
-                !formData.warehouseId ||
-                !formData.vendorId
-              }
-            >
-              {loading ? "Saving..." : product ? "Update" : "Create"}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

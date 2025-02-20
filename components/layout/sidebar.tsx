@@ -18,6 +18,10 @@ import {
   LucideIcon,
   Menu,
   X,
+  FileBarChart,
+  FileText,
+  PieChart,
+  Briefcase,
 } from "lucide-react";
 import {
   Sheet,
@@ -95,6 +99,31 @@ const navigationItems: NavGroupType[] = [
         title: "Orders",
         href: "/orders",
         icon: ShoppingCart,
+      },
+      {
+        title: "Vendors",
+        href: "/vendors",
+        icon: Briefcase,
+      },
+    ],
+  },
+  {
+    title: "Reports",
+    items: [
+      {
+        title: "Sales Report",
+        href: "/reports/sales",
+        icon: FileBarChart,
+      },
+      {
+        title: "Inventory Report",
+        href: "/reports/inventory",
+        icon: FileText,
+      },
+      {
+        title: "Performance",
+        href: "/reports/performance",
+        icon: PieChart,
       },
     ],
   },
