@@ -1,83 +1,35 @@
+// app/vendors/[id]/vendor-detail-client.tsx
 "use client";
 
 import { useState } from "react";
-import { PrismaClient } from "@prisma/client";
-import { auth } from "@/auth";
-import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import DeleteVendorButton from "@/components/vendors/DeleteVendorButton";
-import ProductModal from "@/components/products/ProductModal";
-import { FaMapMarkerAlt, FaCalendar, FaEdit, FaPlus } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { FaMapMarkerAlt, FaCalendar, FaEdit, FaPlus } from "react-icons/fa";
+import DeleteVendorButton from "@/components/vendors/DeleteVendorButton";
+import { Vendor, Product } from "@prisma/client";
+import ProductModal from "./../../../../components/vendors/pro";
 
-export const metadata = {
-  title: "Vendor Details | Inventory Management",
-  description: "View vendor information and products",
-};
-
-async function getVendor(id: string, organizationId: string) {
-  const prisma = new PrismaClient();
-  try {
-    return await prisma.vendor.findFirst({
-      where: {
-        id,
-        organizationId,
-      },
-      include: {
-        products: {
-          select: {
-            id: true,
-            sku: true,
-            name: true,
-            quantity: true,
-            status: true,
-            minStock: true,
-            createdAt: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-      },
-    });
-  } catch (error) {
-    console.error("Failed to fetch vendor:", error);
-    return null;
-  } finally {
-    await prisma.$disconnect();
-  }
+interface VendorWithProducts extends Vendor {
+  products: Pick<
+    Product,
+    "id" | "sku" | "name" | "quantity" | "status" | "minStock" | "createdAt"
+  >[];
 }
 
-interface VendorDetailPageProps {
-  params: Promise<{ id: string }>;
+interface VendorDetailClientProps {
+  vendor: VendorWithProducts;
 }
 
-// Split into server and client components
-const VendorDetailPage = async ({ params }: VendorDetailPageProps) => {
-  const { id } = await params;
-
-  const session = await auth();
-  if (!session) {
-    redirect("/login");
-  }
-
-  const vendor = await getVendor(id, session.user.organizationId);
-  if (!vendor) {
-    notFound();
-  }
-
-  return <VendorDetailClient vendor={vendor} />;
-};
-
-// Client component to handle state and UI interactions
-const VendorDetailClient = ({ vendor }) => {
+export default function VendorDetailClient({
+  vendor,
+}: VendorDetailClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
-  
+
   const handleModalClose = () => {
     setIsModalOpen(false);
   };
-  
+
   const handleUpdate = () => {
     router.refresh();
   };
@@ -242,7 +194,7 @@ const VendorDetailClient = ({ vendor }) => {
 
       {/* Product Modal */}
       {isModalOpen && (
-        <ProductModal 
+        <ProductModal
           isOpen={isModalOpen}
           onClose={handleModalClose}
           onUpdate={handleUpdate}
@@ -251,6 +203,4 @@ const VendorDetailClient = ({ vendor }) => {
       )}
     </div>
   );
-};
-
-export default VendorDetailPage;
+}

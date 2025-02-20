@@ -1,4 +1,6 @@
-// app/(protected)/warehouses/[id]/warehouse-details.tsx
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
+import ProductModal from "@/components/products/ProductModal";
+import { Product } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 interface Warehouse {
   id: string;
@@ -32,7 +37,28 @@ interface WarehouseDetailsProps {
 }
 
 export function WarehouseDetails({ warehouse }: WarehouseDetailsProps) {
-  // Rest of the component remains the same
+  const router = useRouter();
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(
+    undefined
+  );
+  //const [products, setProducts] = useState(warehouse.products);
+
+  const handleOpenProductModal = (product?: Product) => {
+    setSelectedProduct(product);
+    setIsProductModalOpen(true);
+  };
+
+  const handleCloseProductModal = () => {
+    setIsProductModalOpen(false);
+    setSelectedProduct(undefined);
+  };
+
+  const handleProductUpdate = () => {
+    // Refresh the current page to get updated data
+    router.refresh();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -66,18 +92,30 @@ export function WarehouseDetails({ warehouse }: WarehouseDetailsProps) {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold">Products</h3>
-          <Link href={`/warehouses/${warehouse.id}/products/new`}>
-            <Button>Add Product</Button>
-          </Link>
+          <Button onClick={() => handleOpenProductModal()}>Add Product</Button>
         </div>
 
         {warehouse.products.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {warehouse.products.map((product) => (
-              <Card key={product.id}>
+              <Card key={product.id} className="group">
                 <CardHeader>
-                  <CardTitle>{product.name}</CardTitle>
-                  <CardDescription>{product.sku}</CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{product.name}</CardTitle>
+                      <CardDescription>{product.sku}</CardDescription>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() =>
+                        handleOpenProductModal(product as unknown as Product)
+                      }
+                    >
+                      Edit
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <dl className="grid grid-cols-2 gap-2 text-sm">
@@ -101,6 +139,14 @@ export function WarehouseDetails({ warehouse }: WarehouseDetailsProps) {
           <p className="text-gray-500">No products in this warehouse yet.</p>
         )}
       </div>
+
+      {/* Product Modal Integration */}
+      <ProductModal
+        isOpen={isProductModalOpen}
+        onClose={handleCloseProductModal}
+        product={selectedProduct}
+        onUpdate={handleProductUpdate}
+      />
     </div>
   );
 }

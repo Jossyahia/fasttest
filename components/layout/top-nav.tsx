@@ -91,8 +91,8 @@ const NavLinksDropdown = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/warehouse" className="w-full cursor-pointer">
-            Warehouse
+          <Link href="/warehouses" className="w-full cursor-pointer">
+            Warehouses
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
