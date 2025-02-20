@@ -61,6 +61,32 @@ export default function ProductModal({
     }
   }, [vendors, product, initialVendorSet]);
 
+  const handleQuantityChange = (
+    value: number,
+    field: "quantity" | "minStock"
+  ) => {
+    if (value < 0) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const incrementValue = (field: "quantity" | "minStock") => {
+    const currentValue =
+      field === "quantity" ? formData.quantity : formData.minStock;
+    handleQuantityChange(currentValue + 1, field);
+  };
+
+  const decrementValue = (field: "quantity" | "minStock") => {
+    const currentValue =
+      field === "quantity" ? formData.quantity : formData.minStock;
+    if (currentValue > 0) {
+      handleQuantityChange(currentValue - 1, field);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -284,41 +310,147 @@ export default function ProductModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="quantity"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Quantity*
                 </label>
-                <input
-                  type="number"
-                  value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      quantity: Math.max(0, parseInt(e.target.value) || 0),
-                    }))
-                  }
-                  className="block w-full rounded-md border border-gray-300 p-2"
-                  min="0"
-                  required
-                />
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => decrementValue("quantity")}
+                    className="px-3 py-2 bg-gray-100 rounded-l-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Decrease quantity"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <input
+                    id="quantity"
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(
+                        parseInt(e.target.value) || 0,
+                        "quantity"
+                      )
+                    }
+                    className="block w-full border-y border-gray-300 p-2 text-center"
+                    min="0"
+                    required
+                    aria-label="Quantity value"
+                    aria-describedby="quantity-helper"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => incrementValue("quantity")}
+                    className="px-3 py-2 bg-gray-100 rounded-r-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Increase quantity"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <p id="quantity-helper" className="text-xs text-gray-500 mt-1">
+                  Current inventory level
+                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="minStock"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Min Stock*
                 </label>
-                <input
-                  type="number"
-                  value={formData.minStock}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      minStock: Math.max(0, parseInt(e.target.value) || 0),
-                    }))
-                  }
-                  className="block w-full rounded-md border border-gray-300 p-2"
-                  min="0"
-                  required
-                />
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => decrementValue("minStock")}
+                    className="px-3 py-2 bg-gray-100 rounded-l-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Decrease minimum stock"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <input
+                    id="minStock"
+                    type="number"
+                    value={formData.minStock}
+                    onChange={(e) =>
+                      handleQuantityChange(
+                        parseInt(e.target.value) || 0,
+                        "minStock"
+                      )
+                    }
+                    className="block w-full border-y border-gray-300 p-2 text-center"
+                    min="0"
+                    required
+                    aria-label="Minimum stock value"
+                    aria-describedby="minstock-helper"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => incrementValue("minStock")}
+                    className="px-3 py-2 bg-gray-100 rounded-r-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Increase minimum stock"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <p id="minstock-helper" className="text-xs text-gray-500 mt-1">
+                  Alerts will trigger when below this level
+                </p>
               </div>
             </div>
 
