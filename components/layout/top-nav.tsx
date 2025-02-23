@@ -15,13 +15,14 @@ import {
 import { UserNav } from "./user-nav";
 import NotificationsComponent from "@/components/notifications/NotificationsComponent";
 import { useState, useEffect } from "react";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface TopNavProps {
   onMobileMenuClick?: () => void;
 }
 
 const NotificationsDropdown = () => {
-  const [hasNewNotifications, setHasNewNotifications] = useState(true);
+  const { unreadCount } = useNotifications();
 
   return (
     <DropdownMenu>
@@ -33,7 +34,7 @@ const NotificationsDropdown = () => {
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
-          {hasNewNotifications && (
+          {unreadCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
@@ -53,7 +54,6 @@ const NotificationsDropdown = () => {
             variant="ghost"
             size="sm"
             className="text-xs text-muted-foreground hover:text-primary"
-            onClick={() => setHasNewNotifications(false)}
           >
             Mark all as read
           </Button>

@@ -13,6 +13,8 @@ interface ProductModalProps {
   product?: Product;
   onUpdate: () => void;
   initialVendorId?: string;
+  readOnly?: boolean;
+  mode: "add" | "edit" | "view";
 }
 
 export default function ProductModal({
@@ -21,6 +23,8 @@ export default function ProductModal({
   product,
   onUpdate,
   initialVendorId,
+  readOnly = false,
+  mode,
 }: ProductModalProps) {
   const { warehouses, isLoading: warehousesLoading } = useWarehouses();
   const { vendors, isLoading: vendorsLoading } = useVendors();
@@ -68,6 +72,7 @@ export default function ProductModal({
     field: "quantity" | "minStock"
   ) => {
     if (value < 0) return;
+    if (readOnly) return;
 
     setFormData((prev) => ({
       ...prev,
@@ -76,12 +81,16 @@ export default function ProductModal({
   };
 
   const incrementValue = (field: "quantity" | "minStock") => {
+    if (readOnly) return;
+
     const currentValue =
       field === "quantity" ? formData.quantity : formData.minStock;
     handleQuantityChange(currentValue + 1, field);
   };
 
   const decrementValue = (field: "quantity" | "minStock") => {
+    if (readOnly) return;
+
     const currentValue =
       field === "quantity" ? formData.quantity : formData.minStock;
     if (currentValue > 0) {
@@ -91,6 +100,8 @@ export default function ProductModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly) return;
+
     setLoading(true);
     setError(null);
 
@@ -133,15 +144,19 @@ export default function ProductModal({
     }
   };
 
+  const getModalTitle = () => {
+    if (mode === "view") return "View Product";
+    if (mode === "edit") return "Edit Product";
+    return "Add Product";
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center z-10">
-          <h2 className="text-xl font-bold">
-            {product ? "Edit Product" : "Add Product"}
-          </h2>
+          <h2 className="text-xl font-bold">{getModalTitle()}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -188,7 +203,7 @@ export default function ProductModal({
                   }
                   className="block w-full rounded-md border border-gray-300 p-2"
                   required
-                  disabled={warehousesLoading}
+                  disabled={warehousesLoading || readOnly}
                 >
                   <option value="">Select Warehouse</option>
                   {warehouses.map((warehouse) => (
@@ -218,7 +233,7 @@ export default function ProductModal({
                   }
                   className="block w-full rounded-md border border-gray-300 p-2"
                   required
-                  disabled={vendorsLoading || !!initialVendorId}
+                  disabled={vendorsLoading || !!initialVendorId || readOnly}
                 >
                   <option value="">Select Vendor</option>
                   {vendors.map((vendor) => (
@@ -249,6 +264,7 @@ export default function ProductModal({
                 }
                 className="block w-full rounded-md border border-gray-300 p-2"
                 required
+                disabled={readOnly}
               >
                 {Object.values(InventoryStatus).map((status) => (
                   <option key={status} value={status}>
@@ -272,6 +288,7 @@ export default function ProductModal({
                   className="block w-full rounded-md border border-gray-300 p-2"
                   required
                   placeholder="Enter SKU"
+                  readOnly={readOnly}
                 />
               </div>
 
@@ -288,6 +305,7 @@ export default function ProductModal({
                   className="block w-full rounded-md border border-gray-300 p-2"
                   required
                   placeholder="Enter product name"
+                  readOnly={readOnly}
                 />
               </div>
             </div>
@@ -307,6 +325,7 @@ export default function ProductModal({
                 className="block w-full rounded-md border border-gray-300 p-2"
                 rows={3}
                 placeholder="Enter product description"
+                readOnly={readOnly}
               />
             </div>
 
@@ -322,8 +341,11 @@ export default function ProductModal({
                   <button
                     type="button"
                     onClick={() => decrementValue("quantity")}
-                    className="px-3 py-2 bg-gray-100 rounded-l-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`px-3 py-2 bg-gray-100 rounded-l-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      readOnly ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                     aria-label="Decrease quantity"
+                    disabled={readOnly}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -355,12 +377,16 @@ export default function ProductModal({
                     required
                     aria-label="Quantity value"
                     aria-describedby="quantity-helper"
+                    readOnly={readOnly}
                   />
                   <button
                     type="button"
                     onClick={() => incrementValue("quantity")}
-                    className="px-3 py-2 bg-gray-100 rounded-r-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`px-3 py-2 bg-gray-100 rounded-r-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      readOnly ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                     aria-label="Increase quantity"
+                    disabled={readOnly}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -394,8 +420,11 @@ export default function ProductModal({
                   <button
                     type="button"
                     onClick={() => decrementValue("minStock")}
-                    className="px-3 py-2 bg-gray-100 rounded-l-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`px-3 py-2 bg-gray-100 rounded-l-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      readOnly ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                     aria-label="Decrease minimum stock"
+                    disabled={readOnly}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -427,12 +456,16 @@ export default function ProductModal({
                     required
                     aria-label="Minimum stock value"
                     aria-describedby="minstock-helper"
+                    readOnly={readOnly}
                   />
                   <button
                     type="button"
                     onClick={() => incrementValue("minStock")}
-                    className="px-3 py-2 bg-gray-100 rounded-r-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`px-3 py-2 bg-gray-100 rounded-r-md border border-gray-300 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      readOnly ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                     aria-label="Increase minimum stock"
+                    disabled={readOnly}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -468,6 +501,7 @@ export default function ProductModal({
                 }
                 className="block w-full rounded-md border border-gray-300 p-2"
                 placeholder="Enter storage location"
+                readOnly={readOnly}
               />
             </div>
 
@@ -478,23 +512,29 @@ export default function ProductModal({
                 className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50 mt-2 sm:mt-0 w-full sm:w-auto"
                 disabled={loading}
               >
-                Cancel
+                {readOnly ? "Close" : "Cancel"}
               </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
-                disabled={
-                  loading ||
-                  warehousesLoading ||
-                  vendorsLoading ||
-                  warehouses.length === 0 ||
-                  vendors.length === 0 ||
-                  !formData.warehouseId ||
-                  !formData.vendorId
-                }
-              >
-                {loading ? "Saving..." : product ? "Update" : "Create"}
-              </button>
+              {!readOnly && (
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
+                  disabled={
+                    loading ||
+                    warehousesLoading ||
+                    vendorsLoading ||
+                    warehouses.length === 0 ||
+                    vendors.length === 0 ||
+                    !formData.warehouseId ||
+                    !formData.vendorId
+                  }
+                >
+                  {loading
+                    ? "Saving..."
+                    : mode === "edit"
+                    ? "Update"
+                    : "Create"}
+                </button>
+              )}
             </div>
           </form>
         </div>

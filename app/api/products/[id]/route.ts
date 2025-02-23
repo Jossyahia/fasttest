@@ -53,6 +53,20 @@ export async function PUT(
       },
       data: body,
     });
+
+    // Log activity
+    await prisma.activity.create({
+      data: {
+        action: "PRODUCT UPDATED",
+        details: `Product ${product.name} (${product.sku}) has been updated`,
+        user: { connect: { id: session.user.id } },
+        notifications: {
+          create: {
+            user: { connect: { id: session.user.id } },
+          },
+        },
+      },
+    });
     return NextResponse.json(product);
   } catch (error) {
     console.error("[PRODUCT_PUT]", error);
@@ -77,6 +91,20 @@ export async function DELETE(
       where: {
         id,
         organizationId,
+      },
+    });
+
+    // Log activity
+    await prisma.activity.create({
+      data: {
+        action: "PRODUCT DELETED",
+        details: `Product ${product.name} (${product.sku}) has been deleted`,
+        user: { connect: { id: session.user.id } },
+        notifications: {
+          create: {
+            user: { connect: { id: session.user.id } },
+          },
+        },
       },
     });
     return NextResponse.json(product);

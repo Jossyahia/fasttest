@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Providers } from "./providers";
 import AuthProvider from "@/components/providers/session-provider";
 import { Sidebar } from "@/components/layout/sidebar";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TopNav } from "@/components/layout/top-nav";
 import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
@@ -22,15 +23,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
-          <div className="flex min-h-screen flex-col">
-            <TopNav />
-            <div className="flex-1 flex">
-              <Sidebar />
-              <main className="flex-1 p-6">
-                <Providers>{children}</Providers>
-              </main>
+          <NotificationProvider>
+            <div className="flex min-h-screen flex-col">
+              <TopNav />
+              <div className="flex-1 flex">
+                <Sidebar />
+                <main className="flex-1 p-6">
+                  <Providers>{children}</Providers>
+                </main>
+              </div>
             </div>
-          </div>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

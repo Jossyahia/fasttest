@@ -1,75 +1,55 @@
-"use client";
+// components/notifications/NotificationList.tsx
+import { Notification } from "@prisma/client";
 
-import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-
-interface Notification {
-  id: string;
-  action: string;
-  details?: string;
-  createdAt: string;
+interface NotificationListProps {
+  notifications: Array<
+    Notification & {
+      activity: {
+        action: string;
+        details: string | null;
+      };
+    }
+  >;
+  isLoading: boolean;
 }
 
-export function NotificationList() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const { data: session } = useSession();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!session?.user?.id) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `/api/notifications?userId=${session.user.id}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch notifications", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, [session]);
-
+export function NotificationList({
+  notifications,
+  isLoading,
+}: NotificationListProps) {
   if (isLoading) {
-    return <div className="p-4 text-center">Loading notifications...</div>;
+    return <div>Loading...</div>;
   }
 
   if (notifications.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">No notifications</div>
+      <div className="p-6 text-center text-muted-foreground">
+        No notifications
+      </div>
     );
   }
 
   return (
-    <div className="max-h-[300px] overflow-y-auto">
+    <div className="divide-y">
       {notifications.map((notification) => (
         <div
           key={notification.id}
-          className="p-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors"
+          className={`flex items-start gap-4 p-6 ${
+            !notification.read ? "bg-muted/20" : ""
+          }`}
         >
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium">{notification.action}</p>
-              {notification.details && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {notification.details}
-                </p>
-              )}
-              <span className="text-xs text-gray-400 mt-1">
-                {new Date(notification.createdAt).toLocaleString()}
-              </span>
-            </div>
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-medium">
+              {notification.activity.action}
+            </p>
+            {notification.activity.details && (
+              <p className="text-sm text-muted-foreground">
+                {notification.activity.details}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {new Date(notification.createdAt).toLocaleDateString()}
+            </p>
           </div>
         </div>
       ))}

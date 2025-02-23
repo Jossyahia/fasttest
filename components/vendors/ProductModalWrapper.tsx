@@ -37,15 +37,7 @@ export default function ProductModalWrapper({
   mode,
   product,
 }: ProductModalWrapperProps) {
-  // For the "view" mode, we'll create a custom onClose handler
-  // that wraps the original onClose, this lets us handle the
-  // readonly UI state without modifying the original component
-  const handleClose = () => {
-    onClose();
-  };
-
   // Convert the FullProduct to Product for the modal
-  // Only pass the product to the modal for edit/view modes
   const modalProduct =
     mode !== "add" && product
       ? ({
@@ -65,16 +57,15 @@ export default function ProductModalWrapper({
         } as Product)
       : undefined;
 
-  // For view mode, we could add custom read-only behavior
-  // by passing modalProduct but preventing modifications
-
   return (
     <ProductModal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
       onUpdate={onUpdate}
       initialVendorId={initialVendorId}
       product={modalProduct}
+      readOnly={mode === "view"}
+      mode={mode}
     />
   );
 }

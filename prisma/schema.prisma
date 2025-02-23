@@ -113,6 +113,7 @@ model User {
   sessions          Session[]
   activities        Activity[]
   inventoryMovements InventoryMovement[]
+  notifications     Notification[]      // New relation
 
   @@index([email])
   @@index([organizationId])
@@ -268,13 +269,14 @@ model InventoryMovement {
 }
 
 model Activity {
-  id        String   @id @default(cuid())
-  action    String
-  details   String?
-  createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
+  id            String         @id @default(cuid())
+  action        String
+  read      Boolean  @default(false)  // Add this field
+  details       String?
+  createdAt     DateTime       @default(now())
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String
+  notifications Notification[] // New relation
 
   @@index([userId])
 }
@@ -290,4 +292,17 @@ model Settings {
 
   organization      Organization  @relation(fields: [organizationId], references: [id])
   organizationId    String        @unique
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  activity   Activity @relation(fields: [activityId], references: [id])
+  activityId String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+
+  @@index([userId])
+  @@unique([activityId, userId])
 }

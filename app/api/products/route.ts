@@ -113,9 +113,14 @@ export async function POST(request: NextRequest) {
     // Log activity
     await prisma.activity.create({
       data: {
-        action: "PRODUCT_CREATED",
-        details: `Product ${product.name} (${product.sku}) created`,
-        userId: session.user.id,
+        action: "PRODUCT CREATED",
+        details: `Product ${product.name} (${product.sku}) has been created`,
+        user: { connect: { id: session.user.id } },
+        notifications: {
+          create: {
+            user: { connect: { id: session.user.id } },
+          },
+        },
       },
     });
 

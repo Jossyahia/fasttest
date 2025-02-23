@@ -1,85 +1,117 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import NotificationSkeleton from "./NotificationSkeleton";
+import { format } from "date-fns";
+import { Bell, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Notification {
   id: string;
-  action: string;
-  details?: string;
-  createdAt: string;
+  read: boolean;
+  createdAt: Date;
+  activity: {
+    action: string;
+    details: string | null;
+  };
 }
 
-const NotificationsComponent = () => {
+export default function NotificationsComponent() {
   const { data: session } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch("/api/notifications");
+      const data = await response.json();
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        body: JSON.stringify({ notificationIds: [notificationId] }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!session) return;
+    if (session) {
+      fetchNotifications();
 
-      try {
-        setIsLoading(true);
-        const response = await fetch("/api/notifications");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch notifications");
-        }
-
-        const data = await response.json();
-        setNotifications(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchNotifications();
+      // Set up polling for new notifications
+      const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
+      return () => clearInterval(interval);
+    }
   }, [session]);
 
-  if (isLoading) return <NotificationSkeleton />;
+  if (loading) {
+    return <div className="p-4 text-center">Loading notifications...</div>;
+  }
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
+  if (notifications.length === 0) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        No notifications
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4 p-4">
-      {notifications.length === 0 ? (
-        <p className="text-gray-500 text-center">No notifications</p>
-      ) : (
-        notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className="bg-white shadow-md rounded-lg p-4 hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold text-gray-800">
-                  {notification.action}
-                </h3>
-                {notification.details && (
-                  <p className="text-gray-600 text-sm mt-1">
-                    {notification.details}
-                  </p>
-                )}
-                <span className="text-xs text-gray-500 mt-2">
-                  {new Date(notification.createdAt).toLocaleString()}
-                </span>
-              </div>
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            </div>
+    <div className="space-y-1">
+      {notifications.map((notification) => (
+        <div
+          key={notification.id}
+          className={`flex items-start gap-4 p-4 hover:bg-muted/50 ${
+            !notification.read ? "bg-muted/20" : ""
+          }`}
+        >
+          <Bell className="h-5 w-5 mt-1 flex-shrink-0" />
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-medium leading-none">
+              {notification.activity.action}
+            </p>
+            {notification.activity.details && (
+              <p className="text-sm text-muted-foreground">
+                {notification.activity.details}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(notification.createdAt), "PPp")}
+            </p>
           </div>
-        ))
-      )}
+          {!notification.read && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-auto flex-shrink-0"
+              onClick={() => markAsRead(notification.id)}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ))}
     </div>
   );
-};
-
-export default NotificationsComponent;
+}

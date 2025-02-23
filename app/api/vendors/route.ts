@@ -68,13 +68,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Log activity
     await prisma.activity.create({
       data: {
-        action: "VENDOR_CREATED",
-        details: `Created vendor: ${name}`,
-        user: {
-          connect: { id: session.user.id },
+        action: "New Vendor Created",
+        details: `Created vendor: ${name} has been created`,
+        user: { connect: { id: session.user.id } },
+        notifications: {
+          create: {
+            user: { connect: { id: session.user.id } },
+          },
         },
       },
     });

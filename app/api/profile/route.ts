@@ -1,94 +1,26 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
-//import { Prisma } from "@prisma/client";
-
-// Update the interface to match Prisma's JsonValue type
-// interface OrganizationSettings {
-//   id?: string;
-//   organizationId: string;
-//   lowStockThreshold: number;
-//   currency: string;
-//   notificationEmail: string | null;
-//   metadata?: Prisma.JsonValue; // Changed from Record<string, unknown>
-// }
-
-export async function GET() {
-  try {
-    const session = await auth();
-
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: {
-        organization: {
-          include: {
-            settings: true,
-          },
-        },
-      },
-    });
-
-    if (!user || !user.organization.settings) {
-      return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(user.organization.settings);
-  } catch (error: unknown) {
-    console.error("Settings fetch error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
-}
 
 export async function PUT(request: Request) {
+  const session = await auth();
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { name } = await request.json();
+
   try {
-    const session = await auth();
-
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { lowStockThreshold, currency, notificationEmail, metadata } = body;
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: {
-        organization: true,
-      },
+    const updatedUser = await prisma.user.update({
+      where: { email: session.user.email },
+      data: { name },
     });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return NextResponse.json(updatedUser);
+  } catch (err: unknown) {
+    let errorMessage = "Failed to update profile";
+    if (err instanceof Error) {
+      errorMessage = err.message;
     }
-
-    const updatedSettings = await prisma.settings.upsert({
-      where: { organizationId: user.organization.id },
-      update: { lowStockThreshold, currency, notificationEmail, metadata },
-      create: {
-        organizationId: user.organization.id,
-        lowStockThreshold: lowStockThreshold || 10,
-        currency: currency || "NGN",
-        notificationEmail,
-        metadata,
-      },
-    });
-
-    return NextResponse.json(updatedSettings);
-  } catch (error: unknown) {
-    console.error("Settings update error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
