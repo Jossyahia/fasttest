@@ -18,6 +18,10 @@ import {
   LucideIcon,
   Menu,
   X,
+  FileBarChart,
+  FileText,
+  PieChart,
+  Briefcase,
 } from "lucide-react";
 import {
   Sheet,
@@ -95,6 +99,31 @@ const navigationItems: NavGroupType[] = [
         title: "Orders",
         href: "/orders",
         icon: ShoppingCart,
+      },
+      {
+        title: "Vendors",
+        href: "/vendors",
+        icon: Briefcase,
+      },
+    ],
+  },
+  {
+    title: "Reports",
+    items: [
+      {
+        title: "Sales Report",
+        href: "/reports/sales",
+        icon: FileBarChart,
+      },
+      {
+        title: "Inventory Report",
+        href: "/reports/inventory",
+        icon: FileText,
+      },
+      {
+        title: "Performance",
+        href: "/reports/performance",
+        icon: PieChart,
       },
     ],
   },
@@ -327,11 +356,13 @@ export function Sidebar() {
           )}
         >
           {!isCollapsed && (
-            <Link
-              href="/"
-              className="inline-block hover:text-primary transition-colors"
-            >
-              <h2 className="text-lg font-semibold">FastInv Pro</h2>
+            <Link href="/" className="flex items-center gap-2">
+              <span className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-white">
+                FI
+              </span>
+              <span className="text-lg font-semibold tracking-tight">
+                FastInv Pro
+              </span>
             </Link>
           )}
 
@@ -360,11 +391,13 @@ export function Sidebar() {
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link
-                  href="/"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white"
-                >
-                  <span className="text-sm font-bold">FI</span>
+                <Link href="/" className="flex items-center gap-2">
+                  <span className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-white">
+                    FI
+                  </span>
+                  <span className="text-lg font-semibold tracking-tight">
+                    FastInv Pro
+                  </span>
                 </Link>
               </TooltipTrigger>
               <TooltipContent

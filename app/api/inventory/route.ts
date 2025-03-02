@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 // Define the enum based on your Prisma schema values
 enum InventoryStatus {
   ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  DISCONTINUED = "DISCONTINUED",
+  SOLD = "SOLD",
+  RETURNED = "RETURNED",
 }
 
 export async function GET(req: NextRequest) {

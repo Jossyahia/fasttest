@@ -10,17 +10,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { UserNav } from "./user-nav";
 import NotificationsComponent from "@/components/notifications/NotificationsComponent";
 import { useState, useEffect } from "react";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface TopNavProps {
   onMobileMenuClick?: () => void;
 }
 
 const NotificationsDropdown = () => {
-  const [hasNewNotifications, setHasNewNotifications] = useState(true);
+  const { unreadCount } = useNotifications();
 
   return (
     <DropdownMenu>
@@ -32,7 +34,7 @@ const NotificationsDropdown = () => {
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
-          {hasNewNotifications && (
+          {unreadCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
@@ -52,13 +54,52 @@ const NotificationsDropdown = () => {
             variant="ghost"
             size="sm"
             className="text-xs text-muted-foreground hover:text-primary"
-            onClick={() => setHasNewNotifications(false)}
           >
             Mark all as read
           </Button>
         </div>
         <DropdownMenuSeparator />
         <NotificationsComponent />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+// Navigation links dropdown for mobile
+const NavLinksDropdown = () => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 md:hidden">
+          Navigate
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px]">
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="w-full cursor-pointer">
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/inventory" className="w-full cursor-pointer">
+            Inventory
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/vendors" className="w-full cursor-pointer">
+            Vendors
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/warehouses" className="w-full cursor-pointer">
+            Warehouses
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/reports" className="w-full cursor-pointer">
+            Reports
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -125,15 +166,28 @@ export function TopNav({ onMobileMenuClick }: TopNavProps) {
               Inventory
             </Link>
             <Link
-              href="/reports"
+              href="/vendors"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Vendors
+            </Link>
+            <Link
+              href="/warehouses"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Warehouses
+            </Link>
+            <Link
+              href="/"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
               Reports
             </Link>
           </nav>
 
-          {/* Right side - notifications and user */}
+          {/* Right side - mobile nav dropdown, notifications and user */}
           <div className="flex items-center gap-2">
+            <NavLinksDropdown />
             <NotificationsDropdown />
             <UserNav user={session?.user} />
           </div>

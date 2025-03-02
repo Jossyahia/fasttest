@@ -5,8 +5,8 @@ import { ProductFilters, SortOption } from "@/types/product";
 // Define the InventoryStatus enum locally
 export enum InventoryStatus {
   ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  DISCONTINUED = "DISCONTINUED",
+  SOLD = "SOLD",
+  RETURNED = "RETURNED",
 }
 
 interface ProductFiltersBarProps {

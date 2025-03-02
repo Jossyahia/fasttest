@@ -1,55 +1,36 @@
+// components/notifications/bell.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Notification {
-  id: string;
-  action: string;
-  details?: string;
-  createdAt: string;
-}
+import { useNotifications } from "@/hooks/use-notifications";
+import { useEffect } from "react";
 
 export function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const { data: session } = useSession();
+  const { notifications, mutate } = useNotifications();
 
+  // Revalidate notifications every 30 seconds
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!session?.user?.id) return;
-
-      try {
-        const response = await fetch(
-          `/api/notifications?userId=${session.user.id}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch notifications", error);
-      }
-    };
-
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(mutate, 30000);
     return () => clearInterval(interval);
-  }, [session]);
+  }, [mutate]);
+
+  const unreadCount = notifications?.filter((n) => !n.read).length || 0;
 
   return (
     <div className="relative">
-      <Bell className="h-5 w-5" />
-      {notifications.length > 0 && (
-        <span
-          className={cn(
-            "absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center",
-            "rounded-full bg-red-500 text-white text-xs"
-          )}
-        >
-          {notifications.length}
-        </span>
+      <Bell
+        className={cn(
+          "h-6 w-6 transition-colors",
+          unreadCount > 0 ? "text-red-500" : "text-gray-500"
+        )}
+      />
+      {unreadCount > 0 && (
+        <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
+          <span className="text-[10px] font-medium text-white">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        </div>
       )}
     </div>
   );

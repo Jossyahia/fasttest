@@ -181,7 +181,7 @@ const PricingCard = ({
             variant={plan.popular ? "default" : "outline"}
             asChild
           >
-            <Link href={plan.id === "free" ? "/register" : "/contact"}>
+            <Link href={plan.id === "free" ? "/register" : "/"}>
               <span>{plan.cta}</span>
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -301,7 +301,7 @@ export default function LandingPage() {
         >
           <div className="mb-12 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why choose FastIv Pro?
+              Why choose FastInv Pro?
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Our platform is built with your business needs in mind
@@ -374,7 +374,7 @@ export default function LandingPage() {
         <div className="container px-4 py-8 mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <p className="font-semibold text-lg">FastIv Pro</p>
+              <p className="font-semibold text-lg">FastInv Pro</p>
               <p className="text-sm text-muted-foreground">
                 Modern inventory management solution
               </p>
@@ -406,7 +406,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 FastIv Pro. All rights reserved.
+              © 2025 FastInv Pro. All rights reserved.
             </p>
           </div>
         </div>
